@@ -781,7 +781,7 @@ const handleGasStationComplete = (correctCount: number) => {
               <image
                 href={playerCarImg}
                 x={-s * 0.95}
-                y={-s * 1.3}
+                y={-s * 1.8}
                 width={s * 1.9}
                 height={s * 1.9}
                 preserveAspectRatio="xMidYMid meet"
