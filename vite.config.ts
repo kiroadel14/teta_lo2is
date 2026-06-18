@@ -29,7 +29,7 @@ export default defineConfig({
   },
 
   // Important for GitHub Pages
- base: '/teta_lo2is-main/',
+ base: "/teta-lo2is-v2/",
 
   assetsInclude: ['**/*.svg', '**/*.csv'],
 })
