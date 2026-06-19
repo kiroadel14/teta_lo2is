@@ -776,12 +776,11 @@ const handleGasStationComplete = (correctCount: number) => {
                 fill="black"
                 opacity="0.25"     // 👈 خففنا درجة اللون (كانت 0.4) عشان تبان ناعمة وواقعية على شاشة الموبايل
               />
-
               {/* صورة عربية اللاعب (كما هي بدون تغيير في الأبعاد) */}
               <image
                 href={playerCarImg}
                 x={-s * 0.95}
-                y={-s * 1.8}
+                y={-s * 1}
                 width={s * 1.9}
                 height={s * 1.9}
                 preserveAspectRatio="xMidYMid meet"
