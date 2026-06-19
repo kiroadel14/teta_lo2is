@@ -381,7 +381,7 @@ const handleGasStationComplete = (correctCount: number) => {
     <div
       dir="rtl"
       className="relative w-full h-full overflow-hidden select-none"
-      style={{ fontFamily: "'Cairo', sans-serif", cursor: 'none' }}
+      style={{ fontFamily: "'Cairo', sans-serif" }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
