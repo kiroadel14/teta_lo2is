@@ -106,7 +106,7 @@ export const LEVELS: Level[] = [
   {
     id: 'level_3',
     nameAr: 'قايين وهابيل',
-    videoUrl: 'https://www.youtube.com/embed/IrNpTfpY6eA',
+    videoUrl: 'https://www.youtube.com/embed/QGAtn5CXuWg',
     thumbnail: '🏜️',
     color: '#F59E0B',
     bgColor: '#FEF3C7',
@@ -125,7 +125,7 @@ export const LEVELS: Level[] = [
   {
     id: 'level_4',
     nameAr: 'نوح و الفلك',
-    videoUrl: 'https://www.youtube.com/embed/InVo5hcguJc',
+    videoUrl: 'https://www.youtube.com/embed/bLYSvgulfqw',
     thumbnail: '🌊',
     color: '#3B82F6',
     bgColor: '#EDE9FE',
