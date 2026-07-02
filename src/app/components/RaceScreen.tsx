@@ -104,7 +104,7 @@ const ROAD_BOTTOM = 100;   // Bottom of viewbox
 
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
 const ROAD_HALF_BOTTOM = 42;   // → road spans x=8..92 at viewer's feet
-const ROAD_HALF_HORIZON = 4;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
+const ROAD_HALF_HORIZON = 3.5;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
