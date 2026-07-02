@@ -645,12 +645,52 @@ let spriteIndex = 0;
       onTouchEnd={handleTouchEnd}
     >
       {/* ── GAME SCENE (SVG) ── */}
-     <svg
-  viewBox="0 0 100 100"
-  preserveAspectRatio="none" 
-  className="absolute inset-0 w-full h-full"
-  style={{ display: 'block' }}
->
+ {/* ── GAME SCENE (SVG) ── */}
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none" 
+        className="absolute inset-0 w-full h-full"
+        style={{ display: 'block', width: '100%', height: '100%' }}
+      >
+        <defs>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1565C0" />
+            <stop offset="100%" stopColor="#B3E5FC" />
+          </linearGradient>
+          <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1565C0" />
+            <stop offset="100%" stopColor="#0A2E6C" />
+          </linearGradient>
+          <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#E8C97A" />
+            <stop offset="100%" stopColor="#C8963A" />
+          </linearGradient>
+          <linearGradient id="bottomVignette" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="70%" stopColor="black" stopOpacity="0" />
+            <stop offset="100%" stopColor="black" stopOpacity="0.35" />
+          </linearGradient>
+          <clipPath id="sharkClip" clipPathUnits="objectBoundingBox">
+            <rect x="0" y="0" width="1" height="0.45" /> 
+          </clipPath>
+        </defs>
+
+        {/* الخلفية الأساسية (سما) */}
+        <rect width="100" height="100" fill="url(#sky)" />
+
+        {/* لو شغال Free Mode (نهر) */}
+        {isFreeMode ? (
+          <>
+            <rect x="0" y={HORIZON_Y} width="100" height={ROAD_BOTTOM - HORIZON_Y + 5} fill="url(#sandBank)" />
+            <polygon points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`} fill="url(#riverWater)" />
+            
+            {/* هنا الـ obstacles.map بتاعك الخاص بالـ LAYER 11 */}
+            {/* ... حط كود الـ obstacles.map اللي بعتهولك في الرسالة اللي فاتت هنا ... */}
+          </>
+        ) : (
+          /* هنا الكود القديم بتاع الـ Lane mode لو مش FreeMode */
+          <text x="50" y="50" textAnchor="middle" fill="white">النمط غير مدعوم</text>
+        )}
+      </svg>
         
         {isFlappyMode ? (
           <>
