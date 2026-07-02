@@ -104,7 +104,7 @@ const ROAD_BOTTOM = 100;   // Bottom of viewbox
 
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
 const ROAD_HALF_BOTTOM = 42;   // → road spans x=8..92 at viewer's feet
-const ROAD_HALF_HORIZON = 3.5;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
+const ROAD_HALF_HORIZON = 4;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
@@ -645,53 +645,133 @@ let spriteIndex = 0;
       onTouchEnd={handleTouchEnd}
     >
       {/* ── GAME SCENE (SVG) ── */}
- {/* ── GAME SCENE (SVG) ── */}
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none" 
-        className="absolute inset-0 w-full h-full"
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      >
+     <svg
+  viewBox="0 0 100 100"
+  preserveAspectRatio="none" 
+  className="absolute inset-0 w-full h-full"
+  style={{ display: 'block' }}
+>
         <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1565C0" />
-            <stop offset="100%" stopColor="#B3E5FC" />
+          {/* ── SKY gradient ── */}
+          {isFreeMode ? (
+            isNoahLevel ? (
+              /* Noah's Ark level: stormy dark sky */
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1A2540" />
+                <stop offset="40%" stopColor="#2C3E5A" />
+                <stop offset="75%" stopColor="#4A6070" />
+                <stop offset="100%" stopColor="#7A9BAA" />
+              </linearGradient>
+            ) : (
+              /* Level 1: warm sunny sky */
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1565C0" />
+                <stop offset="35%" stopColor="#1E88E5" />
+                <stop offset="70%" stopColor="#64B5F6" />
+                <stop offset="100%" stopColor="#B3E5FC" />
+              </linearGradient>
+            )
+          ) : (
+            /* Lane mode: original sky */
+            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1A5BB5" />
+              <stop offset="40%" stopColor="#3D8EE8" />
+              <stop offset="75%" stopColor="#79C0F5" />
+              <stop offset="100%" stopColor="#C5E8FF" />
+            </linearGradient>
+          )}
+
+          {/* ── ROAD: dark asphalt (lane mode only) ── */}
+          <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#9B9590" />
+            <stop offset="18%" stopColor="#777270" />
+            <stop offset="100%" stopColor="#3E3C3A" />
           </linearGradient>
-          <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1565C0" />
-            <stop offset="100%" stopColor="#0A2E6C" />
+
+          {/* ── Road crest continuation above horizon ── */}
+          <linearGradient id="roadCrest" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#B5B0AB" stopOpacity="0.0" />
+            <stop offset="100%" stopColor="#9B9590" stopOpacity="1.0" />
           </linearGradient>
-          <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#E8C97A" />
-            <stop offset="100%" stopColor="#C8963A" />
+
+          {/* ── Grass ground (lane mode) ── */}
+          <linearGradient id="grassGround" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3EC95A" />
+            <stop offset="100%" stopColor="#1A7A30" />
           </linearGradient>
+
+          {/* ── River water surface (free mode) ── */}
+          {isFreeMode && (
+            isNoahLevel ? (
+              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
+  <stop offset="0%" stopColor="#4FC3F7" /> 
+  <stop offset="50%" stopColor="#29B6F6" />
+  <stop offset="100%" stopColor="#0277BD" /> 
+</linearGradient>
+            ) : (
+              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1565C0" />
+                <stop offset="50%" stopColor="#0D47A1" />
+                <stop offset="100%" stopColor="#0A2E6C" />
+              </linearGradient>
+            )
+          )}
+
+          {/* ── Sandy bank gradient (free mode) ── */}
+          {isFreeMode && (
+            isNoahLevel ? (
+              <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#7A6040" />
+                <stop offset="100%" stopColor="#4A3020" />
+              </linearGradient>
+            ) : (
+              <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#E8C97A" />
+                <stop offset="100%" stopColor="#C8963A" />
+              </linearGradient>
+            )
+          )}
+
+          {/* ── Horizon mist over road ── */}
+          <linearGradient id="roadMist" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#AEDCFF" stopOpacity="0.50" />
+            <stop offset="35%" stopColor="#AEDCFF" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#AEDCFF" stopOpacity="0.0" />
+          </linearGradient>
+
+          {/* ── Verge grass darkening towards road ── */}
+          <linearGradient id="verge" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#52D96B" />
+            <stop offset="100%" stopColor="#1E8C34" />
+          </linearGradient>
+
+          {/* ── Vignette for fuel warning ── */}
+          <radialGradient id="redVignette" cx="50%" cy="50%" r="50%">
+            <stop offset="55%" stopColor="transparent" />
+            <stop offset="100%" stopColor={fuelState !== 'normal' ? '#EF4444' : 'transparent'}
+              stopOpacity={fuelState === 'critical' ? 0.4 : 0.2} />
+          </radialGradient>
+
+          {/* ── Bottom vignette (adds ground shadow, frames scene) ── */}
           <linearGradient id="bottomVignette" x1="0" y1="0" x2="0" y2="1">
             <stop offset="70%" stopColor="black" stopOpacity="0" />
             <stop offset="100%" stopColor="black" stopOpacity="0.35" />
           </linearGradient>
+
+          {/* ── Clip so road doesn't draw above horizon ── */}
+          <clipPath id="belowHorizon">
+            <rect x="0" y={HORIZON_Y} width="100" height={ROAD_BOTTOM} />
+          </clipPath>
+          <clipPath id="aboveHorizon">
+            <rect x="0" y="0" width="100" height={HORIZON_Y} />
+          </clipPath>
+          {/* ── قناع لقص الجزء السفلي من القرش (عشان يبان تحت الماية) ── */}
           <clipPath id="sharkClip" clipPathUnits="objectBoundingBox">
+            {/* هيظهر أعلى 45% بس من الصورة (الزعنفة) ويخفي الباقي */}
             <rect x="0" y="0" width="1" height="0.45" /> 
           </clipPath>
         </defs>
 
-        {/* الخلفية الأساسية (سما) */}
-        <rect width="100" height="100" fill="url(#sky)" />
-
-        {/* لو شغال Free Mode (نهر) */}
-        {isFreeMode ? (
-          <>
-            <rect x="0" y={HORIZON_Y} width="100" height={ROAD_BOTTOM - HORIZON_Y + 5} fill="url(#sandBank)" />
-            <polygon points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`} fill="url(#riverWater)" />
-            
-            {/* هنا الـ obstacles.map بتاعك الخاص بالـ LAYER 11 */}
-            {/* ... حط كود الـ obstacles.map اللي بعتهولك في الرسالة اللي فاتت هنا ... */}
-          </>
-        ) : (
-          /* هنا الكود القديم بتاع الـ Lane mode لو مش FreeMode */
-          <text x="50" y="50" textAnchor="middle" fill="white">النمط غير مدعوم</text>
-        )}
-      </svg>
-        
         {isFlappyMode ? (
           <>
             {/* ════════════════════════════════════════════════════
@@ -1056,7 +1136,7 @@ let spriteIndex = 0;
                   </g>
                 ))}
 
-             {/* ── LAYER 11 (free): Enemy boats & Sharks ── */}
+              {/* ── LAYER 11 (free): Enemy boats & Sharks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
@@ -1095,45 +1175,6 @@ let spriteIndex = 0;
                     </g>
                   );
                 })}
-
-                {/* ── LAYER 12 (free): Player boat ── */}
-                {(() => {
-                  const s = 8;
-                  const cy = 94;
-                  const svgX = riverXAtT(playerX, 1.0);
-                  // Tilt based on velocity
-                  const tilt = playerVXRef.current * 120; // degrees, small
-                  return (
-                    <motion.g
-                      animate={{ x: svgX, y: cy }}
-                      transition={{ type: 'tween', duration: 0.05, ease: 'linear' }}
-                    >
-                      {/* Player wake */}
-                      <ellipse cx={-s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
-                      <ellipse cx={s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
-                      {/* Boat shadow */}
-                      <ellipse
-                        cx="0"
-                        cy={s * 0.08}
-                        rx={s * 0.75}
-                        ry={s * 0.18}
-                        fill="black"
-                        opacity="0.22"
-                      />
-                      <g transform={`rotate(${tilt})`}>
-                        <image
-                          href={playerBoatSrc}
-                          x={-s * 0.95}
-                          y={-s * 1.15}
-                          width={s * 1.9}
-                          height={s * 1.9}
-                          preserveAspectRatio="xMidYMid meet"
-                        />
-                      </g>
-                    </motion.g>
-                  );
-                })()}
-
               </>
             ) : (
               /* ════════════════════════════════════════════════════
