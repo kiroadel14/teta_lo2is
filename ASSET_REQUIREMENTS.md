@@ -59,3 +59,17 @@ All boat sprites are routed through `ImageWithFallback.tsx` in `RaceScreen.tsx`,
 2. All boat sprites should be portrait-oriented (taller than wide) and transparent-background to work with the perspective shadow/scaling system.
 3. Inline SVG decorations (banks, palms, huts, etc.) are defined in `RaceScreen.tsx` in the `BANK_DECORATIONS` data array and surrounding JSX — edit those directly for fine-tuned visual polish.
 4. Wake particles are pure SVG `<ellipse>` elements — no asset file needed or used.
+
+---
+
+## Flappy Mode Assets (Levels 3 & 6)
+
+| Asset Name | Purpose | Level | Size | Transparency | Style | Status |
+|---|---|---|---|---|---|---|
+| `placeholder_player_airplane.svg` | Player vehicle sprite, flappy mode | 3, 6 | 80×80px | Yes | Small airplane, side view | ⏳ Needed |
+| `placeholder_pipe_top.svg` | Top pipe obstacle | 3, 6 | 100×400px | Yes | Green pipe, stretches vertically | ⏳ Needed |
+| `placeholder_pipe_bottom.svg` | Bottom pipe obstacle | 3, 6 | 100×400px | Yes | Green pipe, stretches vertically | ⏳ Needed |
+| `placeholder_sky_background.svg` | Flat sky backdrop (optional if using gradient) | 3, 6 | Screen size | No | Flat sky | ⏳ Needed |
+| `placeholder_city_skyline_silhouette.svg` | Distant flat skyline parallax layer | 3, 6 | Tileable | Yes | Silhouette city | ⏳ Needed |
+| `placeholder_cloud_band.svg` | Mid-distance cloud strip parallax layer | 3, 6 | Tileable | Yes | Clouds | ⏳ Needed |
+| `placeholder_ground_strip.svg` | Scrolling green/dirt ground strip | 3, 6 | Tileable | No | Ground | ⏳ Needed |

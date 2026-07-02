@@ -41,9 +41,10 @@ export interface Level {
    * Movement mode for the race scene.
    * 'lane'  → classic 3-lane road/car mode (default for all levels).
    * 'free'  → continuous free-steering river/boat mode (Levels 1 & 4).
+   * 'flappy'→ tap-to-fly flappy bird mode (Levels 3 & 6).
    * Omitting this field is equivalent to 'lane'.
    */
-  movementMode?: 'lane' | 'free';
+  movementMode?: 'lane' | 'free' | 'flappy';
 }
 
 // ── Helper: build a question with fixed a/b/c/d color slots ──────────────────
@@ -119,10 +120,11 @@ export const LEVELS: Level[] = [
     color: '#F59E0B',
     bgColor: '#FEF3C7',
     emoji: '🏜️',
-    survivalTargetDistance: 1200,
-    obstacleSpeed: 0.012,
-    spawnRate: 70,
+    survivalTargetDistance: 800,
+    obstacleSpeed: 0.009,
+    spawnRate: 30,
     locked: true,
+    movementMode: 'flappy',
     questions: [
 
       q('l3_q1', 'من هما أول ولدين لابينا آدم وأمنا حواء', 'قايين وهابيل ', 'يعقوب وعيسو', 'يوسف وبنيامين', '-', 'a', 3, 1),
@@ -175,10 +177,11 @@ export const LEVELS: Level[] = [
     color: '#F97316',
     bgColor: '#FFEDD5',
     emoji: '⭐',
-    survivalTargetDistance: 2000,
-    obstacleSpeed: 0.018,
-    spawnRate: 40,
+    survivalTargetDistance: 1200,
+    obstacleSpeed: 0.006,
+    spawnRate: 30,
     locked: true,
+    movementMode: 'flappy',
     questions: [
       q('l6_q1', 'ابراهيم جده الكبير كان اسمه ايه', 'سام', 'اسحق.', 'يعقوب', 'نوح', 'a', 6, 1),
       q('l6_q2', 'ابراهيم اسمه األول كان ايه', 'ابيمالك', 'شيت', 'إبرام ', 'تاراح', 'c', 6, 2),
