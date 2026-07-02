@@ -37,6 +37,13 @@ export interface Level {
   spawnRate: number;              // frames between obstacle spawns
   locked: boolean;                // whether this level is locked initially
   questions: LevelQuestion[];     // exactly 3 questions
+  /**
+   * Movement mode for the race scene.
+   * 'lane'  → classic 3-lane road/car mode (default for all levels).
+   * 'free'  → continuous free-steering river/boat mode (Levels 1 & 4).
+   * Omitting this field is equivalent to 'lane'.
+   */
+  movementMode?: 'lane' | 'free';
 }
 
 // ── Helper: build a question with fixed a/b/c/d color slots ──────────────────
@@ -74,10 +81,11 @@ export const LEVELS: Level[] = [
     color: '#22C55E',
     bgColor: '#DCFCE7',
     emoji: '🌿',
-    survivalTargetDistance: 1200,
+    survivalTargetDistance: 1000,
     obstacleSpeed: 0.008,
-    spawnRate: 120,
+    spawnRate: 90,
     locked: false,
+    movementMode: 'free',
     questions: [
       q('l1_q1', 'فى اى يوم خلق الله الشمس و القمر و النجوم ؟', 'اليوم ٤', 'اليوم ٣', 'اليوم ١', 'اليوم ٥', 'c', 1, 2),
       q('l1_q2', 'ماذا خلق الله ف اليوم الخامس ؟', 'الإنسان', 'السماء', 'الطيور و الأسماك', 'الجلد', 'c', 1, 1),
@@ -92,9 +100,9 @@ export const LEVELS: Level[] = [
     color: '#0f5c2f',
     bgColor: '#DBEAFE',
     emoji: '🐍',
-    survivalTargetDistance: 1500,
+    survivalTargetDistance: 1100,
     obstacleSpeed: 0.010,
-    spawnRate: 100,
+    spawnRate: 80,
     locked: true,
     questions: [
 
@@ -111,9 +119,9 @@ export const LEVELS: Level[] = [
     color: '#F59E0B',
     bgColor: '#FEF3C7',
     emoji: '🏜️',
-    survivalTargetDistance: 1800,
+    survivalTargetDistance: 1200,
     obstacleSpeed: 0.012,
-    spawnRate: 90,
+    spawnRate: 70,
     locked: true,
     questions: [
 
@@ -130,10 +138,11 @@ export const LEVELS: Level[] = [
     color: '#3B82F6',
     bgColor: '#EDE9FE',
     emoji: '🌊',
-    survivalTargetDistance: 2200,
+    survivalTargetDistance: 1500,
     obstacleSpeed: 0.014,
-    spawnRate: 80,
+    spawnRate: 60,
     locked: true,
+    movementMode: 'free',
     questions: [
       q('l4_q1', 'مين اللى ربنا طلب منه يبنى الفلك', 'إبراهيم', '-', 'يوسف ', 'نوح ', 'd', 4, 1),
       q('l4_q2', 'الحيوانات دخلت الفلك ازاى', 'عشره عشره', '-', 'اتنين اتنين ', 'واحده واحده', 'c', 4, 2),
@@ -148,9 +157,9 @@ export const LEVELS: Level[] = [
     color: '#EC4899',
     bgColor: '#FCE7F3',
     emoji: '🌎',
-    survivalTargetDistance: 2800,
+    survivalTargetDistance: 1800,
     obstacleSpeed: 0.016,
-    spawnRate: 70,
+    spawnRate: 50,
     locked: true,
     questions: [
       q('l5_q1', 'الشعب قرر يبني ايه ؟ ', 'بيت صغير', 'سور', '-', 'مدينة و برج كبير', 'd', 5, 1),
@@ -166,9 +175,9 @@ export const LEVELS: Level[] = [
     color: '#F97316',
     bgColor: '#FFEDD5',
     emoji: '⭐',
-    survivalTargetDistance: 3500,
+    survivalTargetDistance: 2000,
     obstacleSpeed: 0.018,
-    spawnRate: 60,
+    spawnRate: 40,
     locked: true,
     questions: [
       q('l6_q1', 'ابراهيم جده الكبير كان اسمه ايه', 'سام', 'اسحق.', 'يعقوب', 'نوح', 'a', 6, 1),
