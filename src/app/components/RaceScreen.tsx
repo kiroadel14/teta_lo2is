@@ -16,29 +16,17 @@ import gameOverSound from './game-over.mp3';
 import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
-import sharkImg from './shark.png';
 // المصفوفة العادية لليفل 2
 const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
 const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
 
 // ── Boat sprites for free-steering river mode ──────────────────────────────
-// ── Boat sprites for free-steering river mode ──────────────────────────────
 const PLAYER_BOAT_L1 = playerboatImg;
-const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg'; // 👈 السطر ده اللي هيرجع ليفل 4 يشتغل
-
-// 👈 مصفوفة ليفل 1 (المراكب العادية بس)// 👈 مصفوفة ليفل 1 (المراكب العادية بس)
-const LEVEL_1_ENEMIES = [
+const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg';
+const ENEMY_BOATS = [
   '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
-];
-
-// 👈 مصفوفة ليفل 4 (المراكب العادية + القرش)
-const LEVEL_4_ENEMIES = [
-  '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
-  '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
-  '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
-  sharkImg 
 ];
 
 // ── Flappy mode sprites ──────────────────────────────────────────────────
@@ -430,9 +418,9 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
           // Update steer flags from live touch position
           if (touchXRef.current !== null) {
             const screenMid = window.innerWidth / 2;
-            // تم التعديل: لمس الشمال يودي شمال، واليمين يودي يمين
-            steerLeftRef.current = touchXRef.current < screenMid; 
-            steerRightRef.current = touchXRef.current > screenMid;
+            // RTL: touch on left half of screen → steer right (move boat right visually = increase x)
+            steerLeftRef.current = touchXRef.current > screenMid;
+            steerRightRef.current = touchXRef.current < screenMid;
           }
 
           // Apply acceleration
@@ -466,17 +454,9 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
           spawnFrameCounter.current -= level.spawnRate;
 
 // بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
-let spriteIndex = 0;
-          if (isFreeMode) {
-            // التعديل هنا: نختار المصفوفة الصح حسب الليفل (1 ولا 4)
-            const isLevel4 = level.id === 'level_4' || level.id === 4;
-            const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
-            spriteIndex = Math.floor(Math.random() * currentRiverEnemies.length);
-          } else {            // في وضع الطريق العادي
-            const isLevel5 = level.id === 'level_5' || level.id === 5;
-            const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
-            spriteIndex = Math.floor(Math.random() * currentEnemies.length);
-          }
+const isLevel5 = level.id === 'level_5' || level.id === 5;
+const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           let lane: number;
           let x: number;
           let gapY: number | undefined;
@@ -764,11 +744,6 @@ let spriteIndex = 0;
           </clipPath>
           <clipPath id="aboveHorizon">
             <rect x="0" y="0" width="100" height={HORIZON_Y} />
-          </clipPath>
-          {/* ── قناع لقص الجزء السفلي من القرش (عشان يبان تحت الماية) ── */}
-          <clipPath id="sharkClip" clipPathUnits="objectBoundingBox">
-            {/* هيظهر أعلى 45% بس من الصورة (الزعنفة) ويخفي الباقي */}
-            <rect x="0" y="0" width="1" height="0.45" /> 
           </clipPath>
         </defs>
 
@@ -1136,45 +1111,70 @@ let spriteIndex = 0;
                   </g>
                 ))}
 
-              {/* ── LAYER 11 (free): Enemy boats & Sharks ── */}
+                {/* ── LAYER 11 (free): Enemy boats ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
-                  
-                  // تحديد المصفوفة حسب الليفل
-                  const isLevel4 = level.id === 'level_4' || level.id === 4;
-                  const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
-                  const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
-
-                  // التأكد إذا كان العائق قرش
-                  const isShark = isLevel4 && obs.spriteIndex === 3;
-
+                  const boatSrc = ENEMY_BOATS[obs.spriteIndex];
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      {/* رغوة المياه (بتغطي على جسم القرش من تحت) */}
-                      <ellipse cx={-s * 0.6} cy={s * 0.15} rx={s * 0.8} ry={s * 0.25} fill="white" opacity="0.3" />
-                      <ellipse cx={s * 0.6} cy={s * 0.15} rx={s * 0.8} ry={s * 0.25} fill="white" opacity="0.3" />
-                      
-                      {/* ظل العائق */}
-                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity={isShark ? "0.1" : "0.3"} />
-                      
-                      {/* صورة العائق الوحيدة (بدون أي تكرار) */}
+                      {/* Wake behind enemy */}
+                      <ellipse cx={-s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
+                      <ellipse cx={s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
+                      {/* Shadow */}
+                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.3" />
                       <image
-                        href={imgSrc}
+                        href={boatSrc}
                         x={-s * 1.1}
-                        // بننزل القرش لتحت الماية (-0.2) ونسيب المركب فوق (-1.4)
-                        y={isShark ? -s * 0.2 : -s * 1.4} 
+                        y={-s * 1.4}
                         width={s * 2.2}
                         height={s * 2.2}
                         preserveAspectRatio="xMidYMid meet"
-                        // تطبيق قناع القص لظهور الزعنفة فقط للقرش
-                        clipPath={isShark ? "url(#sharkClip)" : undefined} 
                       />
                     </g>
                   );
                 })}
+
+                {/* ── LAYER 12 (free): Player boat ── */}
+                {(() => {
+                  const s = 8;
+                  const cy = 94;
+                  const svgX = riverXAtT(playerX, 1.0);
+                  // Tilt based on velocity
+                  const tilt = playerVXRef.current * 120; // degrees, small
+                  return (
+                    <motion.g
+                      animate={{ x: svgX, y: cy }}
+                      transition={{ type: 'tween', duration: 0.05, ease: 'linear' }}
+                    >
+                      {/* Player wake */}
+                      <ellipse cx={-s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
+                      <ellipse cx={s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
+                      {/* Boat shadow */}
+                      <ellipse
+                        cx="0"
+                        cy={s * 0.08}
+                        rx={s * 0.75}
+                        ry={s * 0.18}
+                        fill="black"
+                        opacity="0.22"
+                      />
+                      <g transform={`rotate(${tilt})`}>
+                        <image
+                          href={playerBoatSrc}
+                          x={-s * 0.95}
+                          y={-s * 1.15}
+                          width={s * 1.9}
+                          height={s * 1.9}
+                          preserveAspectRatio="xMidYMid meet"
+                        />
+                      </g>
+                    </motion.g>
+                  );
+                })()}
+
               </>
             ) : (
               /* ════════════════════════════════════════════════════
@@ -1570,10 +1570,10 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
         {/* Spacer */}
         <div className="flex-1" />
 
-       {/* ── FREE MODE: Hold-to-steer zones ── */}
+        {/* ── FREE MODE: Hold-to-steer zones ── */}
         {isFreeMode && (
           <div className="flex w-full" style={{ height: '22%', pointerEvents: 'all' }}>
-            {/* الزرار الأول (في بيئة الـ RTL بيظهر على اليمين في الشاشة) */}
+            {/* Left steering zone → in RTL context, steer RIGHT (increase x) */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1589,10 +1589,9 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
               onPointerUp={() => { steerRightRef.current = false; }}
               onPointerLeave={() => { steerRightRef.current = false; }}
             >
-              ▶
+              ◀
             </button>
-            
-            {/* الزرار التاني (في بيئة الـ RTL بيظهر على الشمال في الشاشة) */}
+            {/* Right steering zone → in RTL context, steer LEFT (decrease x) */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1608,7 +1607,7 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
               onPointerUp={() => { steerLeftRef.current = false; }}
               onPointerLeave={() => { steerLeftRef.current = false; }}
             >
-              ◀
+              ▶
             </button>
           </div>
         )}
