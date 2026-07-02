@@ -13,10 +13,17 @@ import crashSound from './crash.mp3';
 import fuelBonusSound from './fuel-bonus.mp3';
 import winnerGameSound from './winner-game.mp3';
 import gameOverSound from './game-over.mp3';
-const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
+import playerPlaneImg from './player-plane.png';
+import greaseImg from './grease.png';
+import playerboatImg from './player-boat.png';
+// المصفوفة العادية لليفل 2
+const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img]; 
+
+// المصفوفة المتقدمة لليفل 5 (فيها الشحم زيادة)
+const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
 
 // ── Boat sprites for free-steering river mode ──────────────────────────────
-const PLAYER_BOAT_L1 = '/teta_lo2is/images/river/placeholder_player_boat_level1.svg';
+const PLAYER_BOAT_L1 = playerboatImg;
 const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg';
 const ENEMY_BOATS = [
   '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
@@ -25,7 +32,7 @@ const ENEMY_BOATS = [
 ];
 
 // ── Flappy mode sprites ──────────────────────────────────────────────────
-const FLAPPY_AIRPLANE = '/teta_lo2is/images/flappy/placeholder_player_airplane.svg';
+const FLAPPY_AIRPLANE = playerPlaneImg;
 const PIPE_TOP = '/teta_lo2is/images/flappy/placeholder_pipe_top.svg';
 const PIPE_BOTTOM = '/teta_lo2is/images/flappy/placeholder_pipe_bottom.svg';
 const FLAPPY_SKY = '/teta_lo2is/images/flappy/placeholder_sky_background.svg';
@@ -448,8 +455,9 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         if (spawnFrameCounter.current >= level.spawnRate) {
           spawnFrameCounter.current -= level.spawnRate;
 
-          const spriteIndex = Math.floor(Math.random() * ENEMY_CARS.length);
-
+// بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
+const currentEnemies = level.id === 'level_5' ? LEVEL_5_ENEMIES : ENEMY_CARS;
+const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           let lane: number;
           let x: number;
           let gapY: number | undefined;
@@ -1349,7 +1357,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
-                  const imgSrc = ENEMY_CARS[obs.spriteIndex];
+                  const currentEnemies = level.id === 'level_5' ? LEVEL_5_ENEMIES : ENEMY_CARS;
+                  const imgSrc = currentEnemies[obs.spriteIndex];
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                       <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.45" />

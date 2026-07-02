@@ -1,6 +1,6 @@
 {
   "name": "teta_lo2is_v2",
-  "homepage": "https://kiroadel14.github.io/teta-lo2is-v2/",
+  "homepage": "https://kiroadel14.github.io/teta_lo2is/",
   "scripts": {
     "start": "vite",
     "build": "vite build",
