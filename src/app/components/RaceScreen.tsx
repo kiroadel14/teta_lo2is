@@ -16,19 +16,29 @@ import gameOverSound from './game-over.mp3';
 import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
+import sharkImg from './shark.png';
 // المصفوفة العادية لليفل 2
-const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img]; 
-
-// المصفوفة المتقدمة لليفل 5 (فيها الشحم زيادة)
+const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
 const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
 
 // ── Boat sprites for free-steering river mode ──────────────────────────────
+// ── Boat sprites for free-steering river mode ──────────────────────────────
 const PLAYER_BOAT_L1 = playerboatImg;
-const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg';
-const ENEMY_BOATS = [
+const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg'; // 👈 السطر ده اللي هيرجع ليفل 4 يشتغل
+
+// 👈 مصفوفة ليفل 1 (المراكب العادية بس)// 👈 مصفوفة ليفل 1 (المراكب العادية بس)
+const LEVEL_1_ENEMIES = [
   '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
+];
+
+// 👈 مصفوفة ليفل 4 (المراكب العادية + القرش)
+const LEVEL_4_ENEMIES = [
+  '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
+  '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
+  '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
+  sharkImg 
 ];
 
 // ── Flappy mode sprites ──────────────────────────────────────────────────
@@ -94,7 +104,7 @@ const ROAD_BOTTOM = 100;   // Bottom of viewbox
 
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
 const ROAD_HALF_BOTTOM = 42;   // → road spans x=8..92 at viewer's feet
-const ROAD_HALF_HORIZON = 6.5;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
+const ROAD_HALF_HORIZON = 4;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
@@ -402,8 +412,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         fuelRef.current = Math.max(0, fuelRef.current - (FUEL_DRAIN_PER_SECOND * deltaSeconds));
 
         // Road/river scroll animation
-        setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % (isFlappyMode ? 100000 : 10));
-
+// Road/river scroll animation
+setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000);
         // 👈 السطر ده اللي كان ناقص عشان العداد يشتغل!
         spawnFrameCounter.current += deltaSeconds * 60;
 
@@ -420,9 +430,9 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           // Update steer flags from live touch position
           if (touchXRef.current !== null) {
             const screenMid = window.innerWidth / 2;
-            // RTL: touch on left half of screen → steer right (move boat right visually = increase x)
-            steerLeftRef.current = touchXRef.current > screenMid;
-            steerRightRef.current = touchXRef.current < screenMid;
+            // تم التعديل: لمس الشمال يودي شمال، واليمين يودي يمين
+            steerLeftRef.current = touchXRef.current < screenMid; 
+            steerRightRef.current = touchXRef.current > screenMid;
           }
 
           // Apply acceleration
@@ -456,8 +466,17 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           spawnFrameCounter.current -= level.spawnRate;
 
 // بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
-const currentEnemies = level.id === 'level_5' ? LEVEL_5_ENEMIES : ENEMY_CARS;
-const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
+let spriteIndex = 0;
+          if (isFreeMode) {
+            // التعديل هنا: نختار المصفوفة الصح حسب الليفل (1 ولا 4)
+            const isLevel4 = level.id === 'level_4' || level.id === 4;
+            const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
+            spriteIndex = Math.floor(Math.random() * currentRiverEnemies.length);
+          } else {            // في وضع الطريق العادي
+            const isLevel5 = level.id === 'level_5' || level.id === 5;
+            const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+            spriteIndex = Math.floor(Math.random() * currentEnemies.length);
+          }
           let lane: number;
           let x: number;
           let gapY: number | undefined;
@@ -626,128 +645,13 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
       onTouchEnd={handleTouchEnd}
     >
       {/* ── GAME SCENE (SVG) ── */}
-      <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 w-full h-full"
-        style={{ display: 'block' }}
-      >
-        <defs>
-          {/* ── SKY gradient ── */}
-          {isFreeMode ? (
-            isNoahLevel ? (
-              /* Noah's Ark level: stormy dark sky */
-              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1A2540" />
-                <stop offset="40%" stopColor="#2C3E5A" />
-                <stop offset="75%" stopColor="#4A6070" />
-                <stop offset="100%" stopColor="#7A9BAA" />
-              </linearGradient>
-            ) : (
-              /* Level 1: warm sunny sky */
-              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1565C0" />
-                <stop offset="35%" stopColor="#1E88E5" />
-                <stop offset="70%" stopColor="#64B5F6" />
-                <stop offset="100%" stopColor="#B3E5FC" />
-              </linearGradient>
-            )
-          ) : (
-            /* Lane mode: original sky */
-            <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#1A5BB5" />
-              <stop offset="40%" stopColor="#3D8EE8" />
-              <stop offset="75%" stopColor="#79C0F5" />
-              <stop offset="100%" stopColor="#C5E8FF" />
-            </linearGradient>
-          )}
-
-          {/* ── ROAD: dark asphalt (lane mode only) ── */}
-          <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#9B9590" />
-            <stop offset="18%" stopColor="#777270" />
-            <stop offset="100%" stopColor="#3E3C3A" />
-          </linearGradient>
-
-          {/* ── Road crest continuation above horizon ── */}
-          <linearGradient id="roadCrest" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#B5B0AB" stopOpacity="0.0" />
-            <stop offset="100%" stopColor="#9B9590" stopOpacity="1.0" />
-          </linearGradient>
-
-          {/* ── Grass ground (lane mode) ── */}
-          <linearGradient id="grassGround" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3EC95A" />
-            <stop offset="100%" stopColor="#1A7A30" />
-          </linearGradient>
-
-          {/* ── River water surface (free mode) ── */}
-          {isFreeMode && (
-            isNoahLevel ? (
-              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1C4430" />
-                <stop offset="50%" stopColor="#0D3328" />
-                <stop offset="100%" stopColor="#071A14" />
-              </linearGradient>
-            ) : (
-              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1565C0" />
-                <stop offset="50%" stopColor="#0D47A1" />
-                <stop offset="100%" stopColor="#0A2E6C" />
-              </linearGradient>
-            )
-          )}
-
-          {/* ── Sandy bank gradient (free mode) ── */}
-          {isFreeMode && (
-            isNoahLevel ? (
-              <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7A6040" />
-                <stop offset="100%" stopColor="#4A3020" />
-              </linearGradient>
-            ) : (
-              <linearGradient id="sandBank" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E8C97A" />
-                <stop offset="100%" stopColor="#C8963A" />
-              </linearGradient>
-            )
-          )}
-
-          {/* ── Horizon mist over road ── */}
-          <linearGradient id="roadMist" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#AEDCFF" stopOpacity="0.50" />
-            <stop offset="35%" stopColor="#AEDCFF" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#AEDCFF" stopOpacity="0.0" />
-          </linearGradient>
-
-          {/* ── Verge grass darkening towards road ── */}
-          <linearGradient id="verge" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#52D96B" />
-            <stop offset="100%" stopColor="#1E8C34" />
-          </linearGradient>
-
-          {/* ── Vignette for fuel warning ── */}
-          <radialGradient id="redVignette" cx="50%" cy="50%" r="50%">
-            <stop offset="55%" stopColor="transparent" />
-            <stop offset="100%" stopColor={fuelState !== 'normal' ? '#EF4444' : 'transparent'}
-              stopOpacity={fuelState === 'critical' ? 0.4 : 0.2} />
-          </radialGradient>
-
-          {/* ── Bottom vignette (adds ground shadow, frames scene) ── */}
-          <linearGradient id="bottomVignette" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="70%" stopColor="black" stopOpacity="0" />
-            <stop offset="100%" stopColor="black" stopOpacity="0.35" />
-          </linearGradient>
-
-          {/* ── Clip so road doesn't draw above horizon ── */}
-          <clipPath id="belowHorizon">
-            <rect x="0" y={HORIZON_Y} width="100" height={ROAD_BOTTOM} />
-          </clipPath>
-          <clipPath id="aboveHorizon">
-            <rect x="0" y="0" width="100" height={HORIZON_Y} />
-          </clipPath>
-        </defs>
-
+     <svg
+  viewBox="0 0 100 100"
+  preserveAspectRatio="none" 
+  className="absolute inset-0 w-full h-full"
+  style={{ display: 'block' }}
+>
+        
         {isFlappyMode ? (
           <>
             {/* ════════════════════════════════════════════════════
@@ -835,26 +739,24 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         ════════════════════════════════════════════════════ */}
 
             {/* Layer A: farthest, most desaturated blue-grey */}
-            <polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#8B7050" : "#7B8EC5"} opacity="0.45" />
-            <polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#7A6040" : "#6E82BE"} opacity="0.45" />
-            <polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#8B7050" : "#6878B8"} opacity="0.50" />
-            <polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#7A6848" : "#7080C0"} opacity="0.42" />
-            <polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#8B7050" : "#6575B8"} opacity="0.50" />
-            <polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#7A6040" : "#7082BE"} opacity="0.45" />
-            <polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#8B7050" : "#7A8EC5"} opacity="0.42" />
-
-            {/* Layer B: mid range */}
-            <polygon points={`-2,${HORIZON_Y} 10,${HORIZON_Y - 11} 20,${HORIZON_Y}`} fill={isFreeMode ? "#6B4E30" : "#5E7A5E"} opacity="0.72" />
-            <polygon points={`14,${HORIZON_Y} 26,${HORIZON_Y - 15} 38,${HORIZON_Y}`} fill={isFreeMode ? "#5A3E22" : "#507050"} opacity="0.72" />
-            <polygon points={`35,${HORIZON_Y} 44,${HORIZON_Y - 11} 52,${HORIZON_Y}`} fill={isFreeMode ? "#4A3018" : "#4E6E4E"} opacity="0.72" />
-            <polygon points={`60,${HORIZON_Y} 72,${HORIZON_Y - 14} 84,${HORIZON_Y}`} fill={isFreeMode ? "#5A3E22" : "#507050"} opacity="0.72" />
-            <polygon points={`78,${HORIZON_Y} 88,${HORIZON_Y - 10} 100,${HORIZON_Y}`} fill={isFreeMode ? "#6B4E30" : "#5E7A5E"} opacity="0.70" />
-
-            {/* Snow/rock caps on tallest peaks */}
-            <polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#D4B890" : "white"} opacity="0.6" />
-            <polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#D4B890" : "white"} opacity="0.6" />
-            <polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#D4B890" : "white"} opacity="0.6" />
-
+           {/* Layer A: farthest, most desaturated blue-grey (Tropical Style) */}
+<polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7B8EC5"} opacity="0.45" />
+<polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6E82BE"} opacity="0.45" />
+<polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6878B8"} opacity="0.50" />
+<polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7080C0"} opacity="0.42" />
+<polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6575B8"} opacity="0.50" />
+<polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7082BE"} opacity="0.45" />
+<polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7A8EC5"} opacity="0.42" />
+           {/* Layer B: mid range (Tropical Forest Style) */}
+<polygon points={`-2,${HORIZON_Y} 10,${HORIZON_Y - 11} 20,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.72" />
+<polygon points={`14,${HORIZON_Y} 26,${HORIZON_Y - 15} 38,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
+<polygon points={`35,${HORIZON_Y} 44,${HORIZON_Y - 11} 52,${HORIZON_Y}`} fill={isFreeMode ? "#3E4A30" : "#4E6E4E"} opacity="0.72" />
+<polygon points={`60,${HORIZON_Y} 72,${HORIZON_Y - 14} 84,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
+<polygon points={`78,${HORIZON_Y} 88,${HORIZON_Y - 10} 100,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.70" />
+           {/* Tallest peak tips (Tropical Forest Canopy Style) */}
+<polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
+<polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
+<polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
             {/* ═══════════════════════════════════════
             FREE MODE: GROUND — Sandy canyon banks + river
             LANE MODE: GROUND — Grass hills
@@ -880,10 +782,17 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </>
                 )}
 
-                {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
+             {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
                 <polygon
-                  points={`${RHL},${HORIZON_Y} ${RHR},${HORIZON_Y} ${VP_X + ROAD_HALF_BOTTOM},${ROAD_BOTTOM} ${VP_X - ROAD_HALF_BOTTOM},${ROAD_BOTTOM}`}
+                  points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`}
                   fill="url(#riverWater)"
+                />
+                {/* انعكاس السماء في منتصف النهر لإعطاء واقعية وعمق 3D */}
+                <polygon
+                  points={`${VP_X - 1.5},${HORIZON_Y} ${VP_X + 1.5},${HORIZON_Y} 65,100 35,100`}
+                  fill="white"
+                  opacity="0.08"
+                  style={{ pointerEvents: 'none' }}
                 />
 
                 {/* ── Water ripple lines (animated with scrollOffset) ── */}
@@ -986,12 +895,27 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </>
                 ) : (
                   /* Level 1: palm trees, beach huts, umbrellas */
+                 /* Level 1: palm trees, beach huts, umbrellas */
+                  /* Level 1: palm trees, beach huts, umbrellas */
+                  /* Level 1: palm trees, beach huts, umbrellas */
                   BANK_DECORATIONS.map(({ side, type, t, spread }, di) => {
-                    const bx = side === 'L' ? roadLeftX(t) : roadRightX(t);
-                    const by = yAtT(t);
-                    const sc = 0.25 + t * 1.0;
+                    
+                    // 1. قسمنا scrollOffset على 100 عشان يمشي بنفس سرعة المراكب بالظبط
+                    const tAnim = (t + (scrollOffset / 100)) % 1;
+
+                    // 2. إخفاء العناصر عند الأفق تماماً لتجنب ظهورها بشكل مفاجئ (Popping)
+                    if (tAnim < 0.02 || tAnim > 0.98) return null;
+
+                    // 3. حساب المكان والحجم لتطبيق المنظور (Perspective) 
+                    const bx = side === 'L' ? roadLeftX(tAnim) : roadRightX(tAnim);
+                    const by = yAtT(tAnim);
+                    
+                    // 4. تكبير العنصر بحدة (Scale) كل ما يقرب من أسفل الشاشة
+                    const sc = 0.15 + Math.pow(tAnim, 1.5) * 2;
                     const sign = side === 'L' ? -1 : 1;
-                    const tx = bx + sign * spread * (0.4 + t * 0.5) * sc;
+                    
+                    // 5. حساب البعد عن النهر لضمان التناسق البصري
+                    const tx = bx + sign * spread * (0.3 + tAnim * 0.6) * sc;
 
                     if (type === 'palm') {
                       return (
@@ -1022,6 +946,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                             fill="#F4D03F" rx={0.4 * sc} />
                           {/* Roof */}
                           <polygon
+
                             points={`${-3.2 * sc},${-4 * sc} 0,${-7 * sc} ${3.2 * sc},${-4 * sc}`}
                             fill="#E74C3C"
                           />
@@ -1091,27 +1016,41 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </g>
                 ))}
 
-                {/* ── LAYER 11 (free): Enemy boats ── */}
+             {/* ── LAYER 11 (free): Enemy boats & Sharks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
-                  const boatSrc = ENEMY_BOATS[obs.spriteIndex];
+                  
+                  // تحديد المصفوفة حسب الليفل
+                  const isLevel4 = level.id === 'level_4' || level.id === 4;
+                  const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
+                  const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
+
+                  // التأكد إذا كان العائق قرش
+                  const isShark = isLevel4 && obs.spriteIndex === 3;
+
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      {/* Wake behind enemy */}
-                      <ellipse cx={-s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
-                      <ellipse cx={s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
-                      {/* Shadow */}
-                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.3" />
+                      {/* رغوة المياه (بتغطي على جسم القرش من تحت) */}
+                      <ellipse cx={-s * 0.6} cy={s * 0.15} rx={s * 0.8} ry={s * 0.25} fill="white" opacity="0.3" />
+                      <ellipse cx={s * 0.6} cy={s * 0.15} rx={s * 0.8} ry={s * 0.25} fill="white" opacity="0.3" />
+                      
+                      {/* ظل العائق */}
+                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity={isShark ? "0.1" : "0.3"} />
+                      
+                      {/* صورة العائق الوحيدة (بدون أي تكرار) */}
                       <image
-                        href={boatSrc}
+                        href={imgSrc}
                         x={-s * 1.1}
-                        y={-s * 1.4}
+                        // بننزل القرش لتحت الماية (-0.2) ونسيب المركب فوق (-1.4)
+                        y={isShark ? -s * 0.2 : -s * 1.4} 
                         width={s * 2.2}
                         height={s * 2.2}
                         preserveAspectRatio="xMidYMid meet"
+                        // تطبيق قناع القص لظهور الزعنفة فقط للقرش
+                        clipPath={isShark ? "url(#sharkClip)" : undefined} 
                       />
                     </g>
                   );
@@ -1357,8 +1296,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
-                  const currentEnemies = level.id === 'level_5' ? LEVEL_5_ENEMIES : ENEMY_CARS;
-                  const imgSrc = currentEnemies[obs.spriteIndex];
+                  const isLevel5 = level.id === 'level_5' || level.id === 5;
+const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+// ضفنا هنا صمام أمان عشان لو مالقاش الصورة، يرسم أول عربية بدل ما يكراش
+const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                       <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.45" />
@@ -1548,10 +1489,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* ── FREE MODE: Hold-to-steer zones ── */}
+       {/* ── FREE MODE: Hold-to-steer zones ── */}
         {isFreeMode && (
           <div className="flex w-full" style={{ height: '22%', pointerEvents: 'all' }}>
-            {/* Left steering zone → in RTL context, steer RIGHT (increase x) */}
+            {/* الزرار الأول (في بيئة الـ RTL بيظهر على اليمين في الشاشة) */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1567,9 +1508,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               onPointerUp={() => { steerRightRef.current = false; }}
               onPointerLeave={() => { steerRightRef.current = false; }}
             >
-              ◀
+              ▶
             </button>
-            {/* Right steering zone → in RTL context, steer LEFT (decrease x) */}
+            
+            {/* الزرار التاني (في بيئة الـ RTL بيظهر على الشمال في الشاشة) */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1585,7 +1527,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               onPointerUp={() => { steerLeftRef.current = false; }}
               onPointerLeave={() => { steerLeftRef.current = false; }}
             >
-              ▶
+              ◀
             </button>
           </div>
         )}
