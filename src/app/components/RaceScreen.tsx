@@ -13,6 +13,7 @@ import crashSound from './crash.mp3';
 import fuelBonusSound from './fuel-bonus.mp3';
 import winnerGameSound from './winner-game.mp3';
 import gameOverSound from './game-over.mp3';
+import coinSound from './coin.mp3';
 import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
@@ -55,6 +56,14 @@ interface Obstacle {
   colorDark: string;
   spriteIndex: number;
   gapY?: number; // 0..100 vertical center of pipe gap (used in flappy mode)
+}
+
+interface Coin {
+  id: number;
+  lane: number;
+  x: number;
+  t: number;
+  gapY?: number;
 }
 
 interface WakeParticle {
@@ -177,6 +186,13 @@ const STEER_MAX = 0.028;   // max steering speed
 const STEER_DAMP = 0.80;    // velocity multiplier per frame (damping)
 // Collision proximity in normalized river units (0-1 scale)
 const FREE_COLLISION_RADIUS = 0.13;
+const COIN_VALUE = 10;
+const COIN_SPAWN_RATE = 110;
+const COIN_SPRITE_SRC = '/teta_lo2is/images/common/placeholder_coin.png';
+const LANE_COIN_SAFE_T_WINDOW = 0.58;
+const FREE_COIN_SAFE_T_WINDOW = 0.52;
+const FREE_COIN_SAFE_X_MARGIN = 0.30;
+const FLAPPY_COIN_SAFE_GAP_MARGIN = 8;
 
 // ── Decoration data for river banks (static positions) ──────────────────────
 // Each entry: { side: 'L'|'R', type, t, spreadFactor }
@@ -213,6 +229,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   // Flappy mode state
   const [playerY, setPlayerY] = useState(50);
   const [obstacles, setObstacles] = useState<Obstacle[]>([]);
+  const [coins, setCoins] = useState<Coin[]>([]);
+  const [coinsCollected, setCoinsCollected] = useState(0);
   const [wakeParticles, setWakeParticles] = useState<WakeParticle[]>([]);
   const [paused, setPaused] = useState(false);
   const [showGasStation, setShowGasStation] = useState(false);
@@ -229,11 +247,15 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const scoreRef = useRef(0);
   const playerLaneRef = useRef(1);
   const obstaclesRef = useRef<Obstacle[]>([]);
+  const coinsRef = useRef<Coin[]>([]);
+  const coinsCollectedRef = useRef(0);
   const pausedRef = useRef(false);
   const gasStationVisitedRef = useRef(false);
   const showGasStationRef = useRef(false);
   const obstacleIdCounter = useRef(0);
   const spawnFrameCounter = useRef(0);
+  const coinIdCounter = useRef(0);
+  const coinSpawnFrameCounter = useRef(0);
   const gameOverFiredRef = useRef(false);
   const collisionCooldownRef = useRef(0);
   const fuelPenaltyFeedbackIdRef = useRef(0);
@@ -262,6 +284,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const fuelBonusRef = useRef<HTMLAudioElement | null>(null);
   const winnerRef = useRef<HTMLAudioElement | null>(null);
   const gameOverRef = useRef<HTMLAudioElement | null>(null);
+  const coinRef = useRef<HTMLAudioElement | null>(null);
 
   // ── تشغيل وتجهيز الأصوات ──
   useEffect(() => {
@@ -273,6 +296,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
     fuelBonusRef.current = new Audio(fuelBonusSound);
     winnerRef.current = new Audio(winnerGameSound);
     gameOverRef.current = new Audio(gameOverSound);
+    coinRef.current = new Audio(coinSound);
 
     mainLoopRef.current.play().catch(() => { });
 
@@ -424,6 +448,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000);
         // 👈 السطر ده اللي كان ناقص عشان العداد يشتغل!
         spawnFrameCounter.current += deltaSeconds * 60;
+        coinSpawnFrameCounter.current += deltaSeconds * 60;
 
         // ── FLAPPY MODE: physics ──────────────────────────────────────────
         if (isFlappyMode) {
@@ -512,6 +537,104 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           .map((obs) => ({ ...obs, t: obs.t + (level.obstacleSpeed * deltaSeconds * 60) }))
           .filter((obs) => obs.t < 1.15);
 
+        if (coinSpawnFrameCounter.current >= COIN_SPAWN_RATE) {
+          coinSpawnFrameCounter.current -= COIN_SPAWN_RATE;
+          const newCoins: Coin[] = [];
+
+          if (isFlappyMode) {
+            const pipeForCoin = obstaclesRef.current.find((obs) =>
+              obs.t > 0.04 && obs.t < 0.35 &&
+              obs.gapY !== undefined &&
+              obs.gapY > FLAPPY_COIN_SAFE_GAP_MARGIN &&
+              obs.gapY < 100 - FLAPPY_COIN_SAFE_GAP_MARGIN &&
+              !coinsRef.current.some((coin) => Math.abs(coin.t - obs.t) < 0.18)
+            );
+            if (pipeForCoin) {
+              newCoins.push({
+                id: coinIdCounter.current++,
+                lane: 1,
+                x: 0,
+                t: pipeForCoin.t,
+                gapY: pipeForCoin.gapY,
+              });
+            }
+          } else if (isFreeMode) {
+            let x: number | null = null;
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+              const candidateX = 0.18 + Math.random() * 0.64;
+              const isSafe = !obstaclesRef.current.some((obs) =>
+                Math.abs(obs.t - 0.05) < FREE_COIN_SAFE_T_WINDOW &&
+                Math.abs(obs.x - candidateX) < FREE_COIN_SAFE_X_MARGIN
+              );
+              if (isSafe) {
+                x = candidateX;
+                break;
+              }
+            }
+            if (x !== null) {
+              newCoins.push({
+                id: coinIdCounter.current++,
+                lane: 1,
+                x,
+                t: 0.05,
+              });
+            }
+          } else {
+            const safeLanes = [0, 1, 2].filter((lane) =>
+              !obstaclesRef.current.some((obs) =>
+                obs.lane === lane &&
+                [0.05, 0.12, 0.19].some((coinT) => Math.abs(obs.t - coinT) < LANE_COIN_SAFE_T_WINDOW)
+              ) &&
+              !coinsRef.current.some((coin) =>
+                coin.lane === lane &&
+                [0.05, 0.12, 0.19].some((coinT) => Math.abs(coin.t - coinT) < LANE_COIN_SAFE_T_WINDOW)
+              )
+            );
+            if (safeLanes.length > 0) {
+              const lane = safeLanes[Math.floor(Math.random() * safeLanes.length)];
+              const coinCount = Math.random() < 0.3 ? 3 : 1;
+              for (let i = 0; i < coinCount; i += 1) {
+                newCoins.push({
+                  id: coinIdCounter.current++,
+                  lane,
+                  x: (LANE_CENTERS_BOTTOM[lane] - (VP_X - ROAD_HALF_BOTTOM)) / (ROAD_HALF_BOTTOM * 2),
+                  t: 0.05 + i * 0.07,
+                });
+              }
+            }
+          }
+
+          if (newCoins.length > 0) {
+            coinsRef.current = [...coinsRef.current, ...newCoins];
+          }
+        }
+
+        coinsRef.current = coinsRef.current
+          .map((coin) => ({ ...coin, t: coin.t + (level.obstacleSpeed * deltaSeconds * 60) }))
+          .filter((coin) => coin.t < 1.15);
+
+        const coinsBeforeCollection = coinsRef.current.length;
+        coinsRef.current = coinsRef.current.filter((coin) => {
+          if (isFlappyMode) {
+            const coinX = 110 - (coin.t / 1.15) * 130;
+            const coinY = coin.gapY ?? 50;
+            return !(Math.abs(25 - coinX) < 6.5 && Math.abs(playerYRef.current - coinY) < 6);
+          }
+          if (isFreeMode) {
+            return !(Math.abs(coin.x - playerXRef.current) < 0.09 && coin.t > 0.88 && coin.t < 1.06);
+          }
+          return !(coin.lane === playerLaneRef.current && coin.t > 0.88 && coin.t < 1.06);
+        });
+        const collectedThisFrame = coinsBeforeCollection - coinsRef.current.length;
+        if (collectedThisFrame > 0) {
+          coinsCollectedRef.current += collectedThisFrame;
+          setCoinsCollected(coinsCollectedRef.current);
+          for (let i = 0; i < collectedThisFrame; i += 1) {
+            const pickupSound = coinRef.current?.cloneNode() as HTMLAudioElement | undefined;
+            pickupSound?.play().catch(() => { });
+          }
+        }
+
         // ── Collision detection ────────────────────────────────────────────
         if (collisionCooldownRef.current > 0) {
           collisionCooldownRef.current -= deltaSeconds * 60;
@@ -578,8 +701,9 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           gameOverFiredRef.current = true;
           // 👇 ده السطر بتاع صوت الخسارة
           gameOverRef.current?.play().catch(() => { });
-          const finalScore = scoreRef.current;
-          const stars = finalScore >= level.survivalTargetDistance ? 3 : finalScore >= level.survivalTargetDistance * 0.6 ? 2 : finalScore >= level.survivalTargetDistance * 0.3 ? 1 : 0;
+          const distanceScore = scoreRef.current;
+          const stars = distanceScore >= level.survivalTargetDistance ? 3 : distanceScore >= level.survivalTargetDistance * 0.6 ? 2 : distanceScore >= level.survivalTargetDistance * 0.3 ? 1 : 0;
+          const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);
           onGameOver({ won: false, score: finalScore, stars });
           return;
         }
@@ -589,8 +713,9 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           gameOverFiredRef.current = true;
           // 👇 السطر ده هيشغل صوت الفوز والاحتفال
           winnerRef.current?.play().catch(() => { });
-          const finalScore = scoreRef.current;
+          const distanceScore = scoreRef.current;
           const stars = fuelRef.current >= 60 ? 3 : fuelRef.current >= 30 ? 2 : 1;
+          const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);
           onGameOver({ won: true, score: finalScore, stars });
           return;
         }
@@ -599,6 +724,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         setFuel(fuelRef.current);
         setScore(scoreRef.current);
         setObstacles([...obstaclesRef.current]);
+        setCoins([...coinsRef.current]);
         if (isFlappyMode) {
           setPlayerY(playerYRef.current);
         } else if (isFreeMode) {
@@ -612,7 +738,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [level, onGameOver, isFreeMode]);
+  }, [level, onGameOver, isFreeMode, isFlappyMode]);
 
   const handleGasStationComplete = (correctCount: number) => {
     const fuelBonus = correctCount * 25;
@@ -838,6 +964,25 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     width={pipeW}
                     height={100}
                     preserveAspectRatio="none"
+                  />
+                </g>
+              );
+            })}
+
+            {coins.map((coin) => {
+              const coinX = 110 - (coin.t / 1.15) * 130;
+              const coinY = coin.gapY ?? 50;
+              const coinSize = 5;
+              return (
+                <g key={coin.id} transform={`translate(${coinX}, ${coinY})`}>
+                  <ellipse cx="0" cy="1.8" rx="2.8" ry="0.8" fill="black" opacity="0.18" />
+                  <image
+                    href={COIN_SPRITE_SRC}
+                    x={-coinSize / 2}
+                    y={-coinSize / 2}
+                    width={coinSize}
+                    height={coinSize}
+                    preserveAspectRatio="xMidYMid meet"
                   />
                 </g>
               );
@@ -1157,6 +1302,25 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </g>
                 ))}
 
+              {coins.map((coin) => {
+                const cx = riverXAtT(coin.x, coin.t);
+                const cy = yAtT(coin.t);
+                const s = Math.max(1.8, coin.t * 4.2);
+                return (
+                  <g key={coin.id} transform={`translate(${cx}, ${cy})`}>
+                    <ellipse cx="0" cy={s * 0.38} rx={s * 0.7} ry={s * 0.2} fill="black" opacity="0.18" />
+                    <image
+                      href={COIN_SPRITE_SRC}
+                      x={-s * 0.5}
+                      y={-s * 0.8}
+                      width={s}
+                      height={s}
+                      preserveAspectRatio="xMidYMid meet"
+                    />
+                  </g>
+                );
+              })}
+
               {/* ── LAYER 11 (free): Sharks & Rocks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
@@ -1468,6 +1632,25 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </g>
                 ))}
 
+                {coins.map((coin) => {
+                  const cx = laneXAtT(coin.lane, coin.t);
+                  const cy = yAtT(coin.t);
+                  const s = Math.max(1.8, coin.t * 4.2);
+                  return (
+                    <g key={coin.id} transform={`translate(${cx}, ${cy})`}>
+                      <ellipse cx="0" cy={s * 0.38} rx={s * 0.7} ry={s * 0.2} fill="black" opacity="0.18" />
+                      <image
+                        href={COIN_SPRITE_SRC}
+                        x={-s * 0.5}
+                        y={-s * 0.8}
+                        width={s}
+                        height={s}
+                        preserveAspectRatio="xMidYMid meet"
+                      />
+                    </g>
+                  );
+                })}
+
                 {/* ════ LAYER 12 — ENEMY CARS ════ */}
                 {obstacles.map((obs) => {
                   const cx = laneXAtT(obs.lane, obs.t);
@@ -1553,7 +1736,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
       <div className="absolute inset-0 pointer-events-none flex flex-col">
         {/* Top HUD bar */}
         <div className="flex items-center justify-between px-3 pt-2 gap-2">
-          {/* Score */}
+          {/* Score + coins */}
+          <div className="flex items-center gap-1.5">
           <div
             className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
             style={{
@@ -1578,6 +1762,40 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
             >
               {toArabicNumerals(score)}
             </span>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
+            style={{
+              background: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(4px)',
+              pointerEvents: 'none',
+              minWidth: '5.5rem',
+              justifyContent: 'center',
+            }}
+          >
+            <ImageWithFallback
+              src={COIN_SPRITE_SRC}
+              alt=""
+              style={{ width: 14, height: 14, objectFit: 'contain' }}
+            />
+            <motion.span
+              key={coinsCollected}
+              initial={{ scale: 1.12 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+              className="text-white"
+              style={{
+                fontWeight: 900,
+                fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)',
+                fontFamily: "'Cairo', sans-serif",
+                display: 'inline-block',
+                minWidth: '3rem',
+                textAlign: 'center',
+              }}
+            >
+              {toArabicNumerals(coinsCollected)}
+            </motion.span>
+          </div>
           </div>
 
           {/* Pause button (center) */}

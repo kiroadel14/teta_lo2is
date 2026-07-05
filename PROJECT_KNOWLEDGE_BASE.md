@@ -419,9 +419,11 @@ interface RaceScreenProps {
 | State | Purpose |
 |---|---|
 | `fuel` | Current fuel percentage (0–100), shown in HUD |
-| `score` | Current distance-based score |
+| `score` | Current distance-based score before coin bonus |
 | `playerLane` | Player's current lane (0=left, 1=center, 2=right) |
 | `obstacles` | Array of active enemy car objects |
+| `coins` | Active collectible coins |
+| `coinsCollected` | Live HUD count of collected coins |
 | `paused` | Whether the game is paused |
 | `showGasStation` | Whether the quiz modal is visible |
 | `gasStationVisited` | Whether the gas station was already triggered this race |
@@ -437,6 +439,8 @@ interface RaceScreenProps {
 | `scoreRef` | Current score (synced to state each frame) |
 | `playerLaneRef` | Current lane (used inside the game loop closure) |
 | `obstaclesRef` | Current obstacles array (used inside the game loop) |
+| `coinsRef` | Current coins array (used inside the game loop) |
+| `coinsCollectedRef` | Authoritative collected coin count used for final score bonus |
 | `pausedRef` | Paused state (used inside game loop) |
 | `gasStationVisitedRef` | Visited flag (used inside game loop) |
 | `showGasStationRef` | Modal visible flag (used inside game loop) |
@@ -444,7 +448,7 @@ interface RaceScreenProps {
 | `collisionCooldownRef` | 90-frame cooldown after collision to prevent rapid damage |
 | `spawnFrameCounter` | Frame accumulator for obstacle spawn timing |
 
-**Audio refs:** `mainLoopRef`, `crashRef`, `fuelBonusRef`, `winnerRef`, `gameOverRef`
+**Audio refs:** `mainLoopRef`, `crashRef`, `fuelBonusRef`, `winnerRef`, `gameOverRef`, `coinRef`
 
 **Controls:**
 - **Keyboard:** `ArrowLeft` → moveLeft, `ArrowRight` → moveRight, `Escape`/`Space` → pause toggle
@@ -644,6 +648,8 @@ Implemented using `requestAnimationFrame` inside a `useEffect` with refs for per
 
 **Loop pauses when:** `pausedRef.current === true` OR `showGasStationRef.current === true`
 
+Coin spawning, movement, collection, HUD updates, and pickup sound playback all run inside the same active game loop, so they pause together with the rest of race physics.
+
 ---
 
 ### 5.3 Fuel System
@@ -696,9 +702,48 @@ Best scores/stars: Math.max(current, new) — never regresses
 totalScore: sum of all level best scores (used for leaderboard ranking)
 ```
 
+Current implementation note: `scoreRef.current` is the raw distance score. Coins do not influence the star calculation. On win or loss, `RaceScreen` first computes stars from fuel/distance, then computes `finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE)` and passes that final score to `App.tsx` for results display and persistence.
+
 ---
 
-### 5.5 Obstacle System
+### 5.5 Coin System
+
+Coins are implemented entirely in `RaceScreen.tsx`; `levels.ts` does not define per-level coin data, and Firestore has no coin-specific fields.
+
+```typescript
+interface Coin {
+  id: number;
+  lane: number;  // lane mode target lane
+  x: number;     // normalized river x for free mode
+  t: number;     // depth/progress through the scene
+  gapY?: number; // flappy pipe-gap center
+}
+```
+
+Key constants and refs:
+- `COIN_VALUE = 10`
+- `COIN_SPAWN_RATE = 110`
+- `COIN_SPRITE_SRC = '/teta_lo2is/images/common/placeholder_coin.png'`
+- `coinsRef` stores active coins for the game loop.
+- `coinsCollectedRef` is the authoritative count used for final scoring.
+
+Per-mode placement:
+- Lane mode (Levels 2, 5): chooses a safe lane and may spawn a 1- or 3-coin line at `t = 0.05/0.12/0.19`; it rejects lanes with active obstacles or existing coins inside the safe depth window.
+- Free/river mode (Levels 1, 4): chooses a normalized `x` between `0.18` and `0.82`; it rejects positions too close in `x` to obstacles at a similar depth.
+- Flappy mode (Levels 3, 6): attaches coins to eligible pipes and places them at the center of the pipe gap (`gapY`) so collection stays inside the safe opening.
+
+Collection detection:
+- Lane: collected when the coin is in the player lane and `0.88 < t < 1.06`.
+- Free/river: collected when `Math.abs(coin.x - playerXRef.current) < 0.09` and `0.88 < t < 1.06`.
+- Flappy: collected when the fixed player x overlaps the coin x and `playerYRef.current` is close to `coin.gapY`.
+
+Each collection immediately increments `coinsCollectedRef`, updates the HUD `coinsCollected` state, and plays `src/app/components/coin.mp3`. The HUD coin counter lives in the top overlay of `RaceScreen.tsx`, next to the score counter, using the same dark translucent pill styling, text sizing, spacing, and spring scale animation pattern.
+
+Coins do not affect fuel, gas-station questions, collisions, unlocks, Firestore schema, or star calculation. `RaceScreen` computes stars from fuel/distance first, then sends `finalScore` to `App.tsx`; `App.tsx` saves that score in the existing `scores` map and includes it in existing `totalScore`.
+
+---
+
+### 5.6 Obstacle System
 
 ```typescript
 interface Obstacle {
@@ -724,22 +769,22 @@ Rendering: perspX/laneXAtT functions place car at correct screen position
 
 ---
 
-### 5.6 Level Difficulty Scaling
+### 5.7 Level Difficulty Scaling
 
-| Level | Target Distance | Obstacle Speed | Spawn Rate (frames) |
-|---|---|---|---|
-| 1 (Creation) | 1200 | 0.008 | 120 |
-| 2 (Adam & Eve) | 1500 | 0.010 | 100 |
-| 3 (Cain & Abel) | 1800 | 0.012 | 90 |
-| 4 (Noah's Ark) | 2200 | 0.014 | 80 |
-| 5 (Babel) | 2800 | 0.016 | 70 |
-| 6 (Abraham) | 3500 | 0.018 | 60 |
+| Level | Mode | Target Distance | Obstacle Speed | Spawn Rate (frames) |
+|---|---|---|---|---|
+| 1 (Creation) | free | 1000 | 0.008 | 90 |
+| 2 (Adam & Eve) | lane | 1100 | 0.010 | 80 |
+| 3 (Cain & Abel) | flappy | 500 | 0.005 | 70 |
+| 4 (Noah's Ark) | free | 1500 | 0.014 | 60 |
+| 5 (Babel) | lane | 1800 | 0.016 | 50 |
+| 6 (Abraham) | flappy | 600 | 0.007 | 65 |
 
 Higher levels = faster obstacles + more frequent spawns + longer race required.
 
 ---
 
-### 5.7 Audio System
+### 5.8 Audio System
 
 All audio uses the Web Audio API via `new Audio(src)`. No audio library used.
 
@@ -750,6 +795,7 @@ All audio uses the Web Audio API via `new Audio(src)`. No audio library used.
 | `fuel-bonus.mp3` | `fuelBonusRef` (RaceScreen) / `correctAudioRef` (Modal) | Correct answer feedback |
 | `winner-game.mp3` | `winnerRef` | Level won |
 | `game-over.mp3` | `gameOverRef` | Level lost (fuel empty) |
+| `coin.mp3` | `coinRef` | Coin pickup sound; cloned on playback so rapid pickups do not cut each other off |
 | `wrong.mp3` | `wrongAudioRef` | Wrong answer in gas station |
 | `audio/levels/levelN/questionQ.mp3` | `audioRef` (in Modal) | Voiced question audio, user-triggered |
 

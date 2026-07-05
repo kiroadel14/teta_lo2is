@@ -73,3 +73,11 @@ All boat sprites are routed through `ImageWithFallback.tsx` in `RaceScreen.tsx`,
 | `placeholder_city_skyline_silhouette.svg` | Distant flat skyline parallax layer | 3, 6 | Tileable | Yes | Silhouette city | ⏳ Needed |
 | `placeholder_cloud_band.svg` | Mid-distance cloud strip parallax layer | 3, 6 | Tileable | Yes | Clouds | ⏳ Needed |
 | `placeholder_ground_strip.svg` | Scrolling green/dirt ground strip | 3, 6 | Tileable | No | Ground | ⏳ Needed |
+---
+
+## Shared Coin System Assets
+
+| Asset Name | Purpose | Level | Size | Transparency | Style | Status |
+|---|---|---|---|---|---|---|
+| `placeholder_coin.png` | Collectible coin sprite, used by all movement modes and the HUD coin counter | 1-6 | 64x64px | Yes | Flat-shaded gold coin | Created in `public/images/common/` |
+| `coin.mp3` | Pickup sound for coin collection feedback | 1-6 | < 1s | N/A | Light, bright pickup chime | ✅ Real asset in place at `src/app/components/coin.mp3` |
