@@ -16,18 +16,26 @@ import gameOverSound from './game-over.mp3';
 import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
+import sharkImg from './shark.png';
+import rockImg from './rock.png'; // 👈 ضيف السطر ده وتأكد من اسم الصورة
+import orbitImg from './orbit.png';
 // المصفوفة العادية لليفل 2
 const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
 const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
 
 // ── Boat sprites for free-steering river mode ──────────────────────────────
 const PLAYER_BOAT_L1 = playerboatImg;
-const PLAYER_BOAT_L4 = '/teta_lo2is/images/river/placeholder_player_boat_level4.svg';
-const ENEMY_BOATS = [
+const PLAYER_BOAT_L4 = orbitImg;
+/*const ENEMY_BOATS = [
   '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
   '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
-];
+];*/
+// 👈 مصفوفة ليفل 1 (قروش بس)
+const LEVEL_1_ENEMIES = [sharkImg];
+
+// 👈 مصفوفة ليفل 4 (قروش وصخور)
+const LEVEL_4_ENEMIES = [sharkImg, rockImg];
 
 // ── Flappy mode sprites ──────────────────────────────────────────────────
 const FLAPPY_AIRPLANE = playerPlaneImg;
@@ -415,12 +423,12 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
 
         // ── FREE MODE: steering physics ────────────────────────────────────
         if (isFreeMode) {
-          // Update steer flags from live touch position
+         // Update steer flags from live touch position
           if (touchXRef.current !== null) {
             const screenMid = window.innerWidth / 2;
-            // RTL: touch on left half of screen → steer right (move boat right visually = increase x)
-            steerLeftRef.current = touchXRef.current > screenMid;
-            steerRightRef.current = touchXRef.current < screenMid;
+            // التعديل هنا: اللمس يمين يروح يمين، واللمس شمال يروح شمال
+            steerLeftRef.current = touchXRef.current < screenMid; 
+            steerRightRef.current = touchXRef.current > screenMid;
           }
 
           // Apply acceleration
@@ -745,6 +753,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           <clipPath id="aboveHorizon">
             <rect x="0" y="0" width="100" height={HORIZON_Y} />
           </clipPath>
+          {/* 👇 الكود اللي كان ناقص ضفناه هنا بـ 0.65 جاهز 👇 */}
+          <clipPath id="sharkClip" clipPathUnits="objectBoundingBox">
+            <rect x="0" y="0" width="1" height="0.65" /> 
+          </clipPath>
         </defs>
 
         {isFlappyMode ? (
@@ -947,12 +959,18 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   /* Noah level: rocky cliff banks + Ark silhouette on horizon */
                   <>
                     {/* Rocky cliff shapes left bank */}
-                    {[0.12, 0.30, 0.55, 0.78].map((t, ci) => {
-                      const bx = roadLeftX(t);
-                      const by = yAtT(t);
-                      const sc = 0.4 + t * 1.2;
+                    {[0.12, 0.30, 0.55, 0.78].map((tBase, ci) => {
+                      // ضفنا scrollOffset عشان الصخور تتحرك
+                      const tAnim = (tBase + (scrollOffset / 100)) % 1;
+                      if (tAnim < 0.02 || tAnim > 0.98) return null;
+                      
+                      const bx = roadLeftX(tAnim);
+                      const by = yAtT(tAnim);
+                      const sc = 0.4 + tAnim * 1.2;
+                      // إبعاد الصخور عن النهر
+                      const pushOut = Math.pow(tAnim, 2) * 12;
                       return (
-                        <g key={`rc${ci}`}>
+                        <g key={`rc${ci}`} transform={`translate(-${pushOut}, 0)`}>
                           <polygon
                             points={`${bx - 1 * sc},${by} ${bx - 3.5 * sc},${by - 4 * sc} ${bx - 6 * sc},${by - 2.5 * sc} ${bx - 8 * sc},${by}`}
                             fill="#4A3020" opacity="0.85"
@@ -964,13 +982,18 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                         </g>
                       );
                     })}
+                    
                     {/* Rocky cliff shapes right bank */}
-                    {[0.18, 0.42, 0.65, 0.85].map((t, ci) => {
-                      const bx = roadRightX(t);
-                      const by = yAtT(t);
-                      const sc = 0.4 + t * 1.2;
+                    {[0.18, 0.42, 0.65, 0.85].map((tBase, ci) => {
+                      const tAnim = (tBase + (scrollOffset / 100)) % 1;
+                      if (tAnim < 0.02 || tAnim > 0.98) return null;
+                      
+                      const bx = roadRightX(tAnim);
+                      const by = yAtT(tAnim);
+                      const sc = 0.4 + tAnim * 1.2;
+                      const pushOut = Math.pow(tAnim, 2) * 12;
                       return (
-                        <g key={`rcr${ci}`}>
+                        <g key={`rcr${ci}`} transform={`translate(${pushOut}, 0)`}>
                           <polygon
                             points={`${bx + 1 * sc},${by} ${bx + 3.5 * sc},${by - 4 * sc} ${bx + 6 * sc},${by - 2.5 * sc} ${bx + 8 * sc},${by}`}
                             fill="#4A3020" opacity="0.85"
@@ -990,13 +1013,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </>
                 ) : (
                   /* Level 1: palm trees, beach huts, umbrellas */
-                 /* Level 1: palm trees, beach huts, umbrellas */
-                  /* Level 1: palm trees, beach huts, umbrellas */
-                  /* Level 1: palm trees, beach huts, umbrellas */
                   BANK_DECORATIONS.map(({ side, type, t, spread }, di) => {
                     
-                    // 1. قسمنا scrollOffset على 100 عشان يمشي بنفس سرعة المراكب بالظبط
-                    const tAnim = (t + (scrollOffset / 100)) % 1;
+                    // 1. قسمنا scrollOffset على 125 عشان يمشي بنفس سرعة المراكب بالظبط
+                    const tAnim = (t + (scrollOffset / 125)) % 1;
 
                     // 2. إخفاء العناصر عند الأفق تماماً لتجنب ظهورها بشكل مفاجئ (Popping)
                     if (tAnim < 0.02 || tAnim > 0.98) return null;
@@ -1010,8 +1030,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     const sign = side === 'L' ? -1 : 1;
                     
                     // 5. حساب البعد عن النهر لضمان التناسق البصري
-                    const tx = bx + sign * spread * (0.3 + tAnim * 0.6) * sc;
-
+                     const tx = bx + sign * (spread * sc * 1.2 + Math.pow(tAnim, 2) * 15);
                     if (type === 'palm') {
                       return (
                         <g key={`dec${di}`} transform={`translate(${tx},${by})`}>
@@ -1111,35 +1130,72 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </g>
                 ))}
 
-                {/* ── LAYER 11 (free): Enemy boats ── */}
+              {/* ── LAYER 11 (free): Sharks & Rocks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
-                  const s = obs.t * 6;
+                  const s = obs.t * 6; // سكيل التكبير
                   if (s < 0.5) return null;
-                  const boatSrc = ENEMY_BOATS[obs.spriteIndex];
+                  
+                  // تحديد المصفوفة حسب الليفل
+                  const isLevel4 = level.id === 'level_4' || level.id === 4;
+                  const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
+                  const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
+
+                  // التأكد إذا كان العائق قرش بناءً على مسار الصورة
+                  const isShark = imgSrc === sharkImg;
+
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      {/* Wake behind enemy */}
-                      <ellipse cx={-s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
-                      <ellipse cx={s * 0.6} cy={s * 0.15} rx={s * 0.7} ry={s * 0.2} fill="white" opacity="0.25" />
-                      {/* Shadow */}
-                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.3" />
-                      <image
-                        href={boatSrc}
-                        x={-s * 1.1}
-                        y={-s * 1.4}
-                        width={s * 2.2}
-                        height={s * 2.2}
-                        preserveAspectRatio="xMidYMid meet"
-                      />
+                      
+                      {isShark ? (
+                        /* ================= تصميم القرش ================= */
+                        <>
+                          {/* طرطشة مياه مدمجة حوالين الزعنفة */}
+                          <ellipse cx="0" cy={0} rx={s * 1.3} ry={s * 0.35} fill="white" opacity="0.4" />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#81D4FA" opacity="0.6" />
+                          
+                          {/* صورة القرش (تم تكبيرها ورفعها قليلاً) */}
+                          <image
+                            href={imgSrc}
+                            x={-s * 1.4}
+                            y={-s * 0.9}
+                            width={s * 2.8}
+                            height={s * 2.8}
+                            preserveAspectRatio="xMidYMid meet"
+                            clipPath="url(#sharkClip)"
+                          />
+                        </>
+                      ) : (
+                        /* ================= تصميم الصخرة ================= */
+                        <>
+                          {/* دوائر مياه (Ripples) حوالين الصخرة بدل الظل الأسود */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.5" />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.8} ry={s * 0.45} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.25" />
+                          
+                          {/* ظل أزرق غامق جداً تحت الماية عشان يثبت الصخرة */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.1} ry={s * 0.25} fill="#0A2E6C" opacity="0.4" />
+
+                          {/* صورة الصخرة (تم تكبيرها وتظبط مكانها) */}
+                          <image
+                            href={imgSrc}
+                            x={-s * 1.3}
+                            y={-s * 1.2}
+                            width={s * 2.6}
+                            height={s * 2.6}
+                            preserveAspectRatio="xMidYMid meet"
+                          />
+                        </>
+                      )}
+                      
                     </g>
                   );
                 })}
 
-                {/* ── LAYER 12 (free): Player boat ── */}
+               {/* ── LAYER 12 (free): Player boat ── */}
                 {(() => {
-                  const s = 8;
+                  // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
+                  const s = isNoahLevel ? 14 : 10; 
                   const cy = 94;
                   const svgX = riverXAtT(playerX, 1.0);
                   // Tilt based on velocity
@@ -1242,7 +1298,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 {[laneDiv1X, laneDiv2X].map((divFn, di) => {
                   const segments = 14;
                   return Array.from({ length: segments }).map((_, seg) => {
-                    const tStart = ((seg / segments) + scrollOffset / 100) % 1;
+                    const tStart = ((seg / segments) + scrollOffset / 150) % 1;
                     const tEnd = Math.min(tStart + 0.038, 0.99);
                     if (tStart < 0.015 || tEnd >= 1) return null;
                     const w = 0.12 + tStart * 0.5;
@@ -1275,7 +1331,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   );
                 })}
 
-                {/* ════ LAYER 9 — ROADSIDE TREES ════ */}
+               {/* ════ LAYER 9 — ROADSIDE TREES ════ */}
+                {/* Left Trees */}
                 {[
                   { t: 0.08, type: 'pine', spread: 5 },
                   { t: 0.14, type: 'round', spread: 6 },
@@ -1287,11 +1344,17 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   { t: 0.68, type: 'round', spread: 12 },
                   { t: 0.78, type: 'pine', spread: 13 },
                   { t: 0.88, type: 'round', spread: 14 },
-                ].map(({ t, type, spread }, i) => {
-                  const y = yAtT(t);
-                  const lx = roadLeftX(t);
-                  const sc = 0.18 + t * 1.6;
-                  const tx = lx - spread * (0.3 + t * 0.7);
+                ].map(({ t: tBase, type, spread }, i) => {
+                  // تحريك الأشجار مع الطريق
+                  const tAnim = (tBase + (scrollOffset / 150)) % 1;
+                  if (tAnim < 0.01 || tAnim > 0.99) return null;
+                  
+                  const y = yAtT(tAnim);
+                  const lx = roadLeftX(tAnim);
+                  const sc = 0.18 + tAnim * 1.6;
+                  // إبعاد الأشجار تدريجياً عن الطريق لتجنب التداخل
+                  const tx = lx - (spread * sc * 0.8 + Math.pow(tAnim, 2) * 15);
+                  
                   return (
                     <g key={`lt${i}`} transform={`translate(${tx},${y}) scale(${sc})`}>
                       {type === 'pine' ? (
@@ -1314,6 +1377,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     </g>
                   );
                 })}
+                
+                {/* Right Trees */}
                 {[
                   { t: 0.10, type: 'round', spread: 5 },
                   { t: 0.17, type: 'pine', spread: 6 },
@@ -1325,11 +1390,16 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   { t: 0.73, type: 'pine', spread: 12 },
                   { t: 0.83, type: 'round', spread: 13 },
                   { t: 0.93, type: 'pine', spread: 14 },
-                ].map(({ t, type, spread }, i) => {
-                  const y = yAtT(t);
-                  const rx = roadRightX(t);
-                  const sc = 0.18 + t * 1.6;
-                  const tx = rx + spread * (0.3 + t * 0.7);
+                ].map(({ t: tBase, type, spread }, i) => {
+                  const tAnim = (tBase + (scrollOffset / 150)) % 1;
+                  if (tAnim < 0.01 || tAnim > 0.99) return null;
+                  
+                  const y = yAtT(tAnim);
+                  const rx = roadRightX(tAnim);
+                  const sc = 0.18 + tAnim * 1.6;
+                  // إبعاد الأشجار تدريجياً عن الطريق
+                  const tx = rx + (spread * sc * 0.8 + Math.pow(tAnim, 2) * 15);
+                  
                   return (
                     <g key={`rt${i}`} transform={`translate(${tx},${y}) scale(${sc})`}>
                       {type === 'pine' ? (
@@ -1377,17 +1447,26 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
+                  
                   const isLevel5 = level.id === 'level_5' || level.id === 5;
-const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
-// ضفنا هنا صمام أمان عشان لو مالقاش الصورة، يرسم أول عربية بدل ما يكراش
-const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
+                  const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+                  const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
+                  
+                  // حددنا إذا كان العائق ده هو الشحم (رقم 3 في مصفوفة LEVEL_5_ENEMIES)
+                  const isGrease = isLevel5 && obs.spriteIndex === 3;
+
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.45" />
+                      {/* الظل يترسم للعربيات بس، الشحم ملوش ظل لأنه بقعة على الأرض */}
+                      {!isGrease && (
+                        <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.45" />
+                      )}
+                      
                       <image
                         href={imgSrc}
                         x={-s * 1.1}
-                        y={-s * 1.4}
+                        // لو شحم ننزله تحت يلزق في الأرض (-0.8)، لو عربية نسيبها مرفوعة في مستواها (-1.4)
+                        y={isGrease ? -s * 0.8 : -s * 1.4}
                         width={s * 2.2}
                         height={s * 2.2}
                         preserveAspectRatio="xMidYMid meet"
@@ -1570,10 +1649,10 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* ── FREE MODE: Hold-to-steer zones ── */}
+       {/* ── FREE MODE: Hold-to-steer zones ── */}
         {isFreeMode && (
-          <div className="flex w-full" style={{ height: '22%', pointerEvents: 'all' }}>
-            {/* Left steering zone → in RTL context, steer RIGHT (increase x) */}
+          <div className="flex w-full" style={{ height: '22%', pointerEvents: 'all' }} dir="ltr">
+            {/* الزرار الأول: السهم الشمال (هيظهر على الشمال عشان ضفنا dir="ltr") */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1585,13 +1664,18 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
                 userSelect: 'none',
                 touchAction: 'none',
               }}
-              onPointerDown={() => { steerRightRef.current = true; }}
-              onPointerUp={() => { steerRightRef.current = false; }}
-              onPointerLeave={() => { steerRightRef.current = false; }}
+              onPointerDown={(e) => { 
+                e.stopPropagation(); 
+                steerLeftRef.current = true; 
+                touchXRef.current = null; 
+              }}
+              onPointerUp={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
+              onPointerLeave={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
             >
               ◀
             </button>
-            {/* Right steering zone → in RTL context, steer LEFT (decrease x) */}
+            
+            {/* الزرار التاني: السهم اليمين (هيظهر على اليمين) */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
@@ -1603,9 +1687,13 @@ const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
                 userSelect: 'none',
                 touchAction: 'none',
               }}
-              onPointerDown={() => { steerLeftRef.current = true; }}
-              onPointerUp={() => { steerLeftRef.current = false; }}
-              onPointerLeave={() => { steerLeftRef.current = false; }}
+              onPointerDown={(e) => { 
+                e.stopPropagation(); 
+                steerRightRef.current = true; 
+                touchXRef.current = null; 
+              }}
+              onPointerUp={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
+              onPointerLeave={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
             >
               ▶
             </button>
