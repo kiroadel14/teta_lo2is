@@ -99,15 +99,15 @@ const HORIZON_Y = 33;     // Y of vanishing horizon line
 const ROAD_BOTTOM = 100;   // Bottom of viewbox
 
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
-const ROAD_HALF_BOTTOM = 42;   // → road spans x=8..92 at viewer's feet
-const ROAD_HALF_HORIZON = 4;  // → road spans x=43.5..56.5 at horizon  (clearly visible!)
+const ROAD_HALF_BOTTOM = 48;   // 👈 كبرنا العرض من تحت عشان يملى الشاشة أكتر (كان 42)
+const ROAD_HALF_HORIZON = 5.5;  // 👈 كبرنا العرض من عند الأفق في الخلفية (كان 4)
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
-const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 28, 14, 0]; // distance from VP_X at bottom
+const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 32, 16, 0]; // 👈 ظبطنا مسافات خطوط الأسفلت عشان تناسب العرض الجديد
 
 // Lane centres at bottom (used for car placement)
-const LANE_CENTERS_BOTTOM = [VP_X - 21, VP_X, VP_X + 21]; // left / centre / right
+const LANE_CENTERS_BOTTOM = [VP_X - 24, VP_X, VP_X + 24]; // 👈 وسعنا المسافة بين العربيات عشان يفضلوا في نص الحارات
 
 // Road continuation "crest" above the horizon — key illusion
 const CREST_Y = HORIZON_Y - 5;
@@ -626,23 +626,19 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
  return (
     <div
       dir="rtl"
-      // التعديل هنا: خلينا الحاوية الأساسية سنتر، ولونها أسود
-      className="flex items-center justify-center w-full h-full bg-[#111] overflow-hidden select-none"
+      className="relative w-full h-full overflow-hidden select-none bg-[#1A5BB5]"
       style={{ fontFamily: "'Cairo', sans-serif" }}
       onTouchStart={handleTouchStart}
       onTouchMove={isFreeMode ? handleTouchMove : undefined}
       onTouchEnd={handleTouchEnd}
     >
-      {/* التعديل هنا: دي الحاوية الذكية اللي هتمنع اللعبة من إنها تتمط */}
-      <div className="relative w-full h-full max-w-[600px] max-h-[950px] bg-black shadow-2xl overflow-hidden">
-        {/* ── GAME SCENE (SVG) ── */}
       {/* ── GAME SCENE (SVG) ── */}
-     <svg
-  viewBox="0 0 100 100"
-  preserveAspectRatio="none" 
-  className="absolute inset-0 w-full h-full"
-  style={{ display: 'block' }}
->
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none" 
+        className="absolute inset-0 w-full h-full"
+        style={{ display: 'block' }}
+      >
         <defs>
           {/* ── SKY gradient ── */}
           {isFreeMode ? (
@@ -905,35 +901,33 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   fill="url(#riverWater)"
                 />
                 
-                {/* انعكاس الشمس المتدرج لإعطاء واقعية وعمق 3D */}
+                {/* انعكاس السماء في منتصف النهر لإعطاء واقعية وعمق 3D */}
                 <polygon
-                  points={`${VP_X - 6},${HORIZON_Y} ${VP_X + 6},${HORIZON_Y} 80,100 20,100`}
-                  fill="url(#waterGlare)"
+                  points={`${VP_X - 1.5},${HORIZON_Y} ${VP_X + 1.5},${HORIZON_Y} 65,100 35,100`}
+                  fill="white"
+                  opacity="0.08"
                   style={{ pointerEvents: 'none' }}
                 />
 
-                {/* ── أمواج المياه المتحركة (Dynamic Waves) ── */}
-                {Array.from({ length: 15 }).map((_, wi) => {
-                  // تحريك الأمواج مع السرعة
-                  const tAnim = ((wi / 15) + scrollOffset / 120) % 1;
-                  if (tAnim < 0.02 || tAnim > 0.98) return null;
-                  const y = yAtT(tAnim);
-                  
-                  // تنويع عرض الأمواج عشان تبان طبيعية ومتقطعة
-                  const spread = 0.15 + (wi % 4) * 0.15; 
-                  const lx = riverXAtT(0.5 - spread, tAnim);
-                  const rx = riverXAtT(0.5 + spread, tAnim);
-                  const thickness = 0.1 + tAnim * 1.2;
-                  
+                {/* ── Water ripple lines (animated with scrollOffset) ── */}
+                {[0.2, 0.35, 0.52, 0.68, 0.82].map((tRipple, ri) => {
+                  const tAnim = ((tRipple + scrollOffset * 0.004) % 0.9) + 0.08;
+                  const leftX = riverXAtT(0.1, tAnim);
+                  const rightX = riverXAtT(0.9, tAnim);
+                  const ry = yAtT(tAnim);
+                  const w = rightX - leftX;
                   return (
-                     <line
-                        key={`ww${wi}`}
-                        x1={lx} y1={y} x2={rx} y2={y}
-                        stroke={isNoahLevel ? "#A5D6A7" : "#81D4FA"}
-                        strokeWidth={thickness}
-                        strokeLinecap="round"
-                        opacity={0.15 + tAnim * 0.3}
-                     />
+                    <ellipse
+                      key={`rip${ri}`}
+                      cx={(leftX + rightX) / 2}
+                      cy={ry}
+                      rx={w * 0.42}
+                      ry={0.2 + tAnim * 0.3}
+                      fill="none"
+                      stroke={isNoahLevel ? "#2A6A48" : "#4FC3F7"}
+                      strokeWidth={0.25 + tAnim * 0.2}
+                      opacity={0.12 + tAnim * 0.18}
+                    />
                   );
                 })}
 
@@ -1477,10 +1471,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       
                       <image
                         href={imgSrc}
-                        x={-s * 1.1}
+                        x={-s * 1.4}
                         // لو شحم ننزله تحت يلزق في الأرض (-0.8)، لو عربية نسيبها مرفوعة في مستواها (-1.4)
                         y={isGrease ? -s * 0.8 : -s * 1.4}
-                        width={s * 2.2}
+                        width={s * 2.8}
                         height={s * 2.2}
                         preserveAspectRatio="xMidYMid meet"
                       />
@@ -1507,9 +1501,9 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       />
                       <image
                         href={playerCarImg}
-                        x={-s * 0.95}
+                        x={-s * 1.25}
                         y={-s * 1.15}
-                        width={s * 1.9}
+                        width={s * 2.5}
                         height={s * 1.9}
                         preserveAspectRatio="xMidYMid meet"
                       />
@@ -1794,6 +1788,5 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         }
       `}</style>
       </div>
-    </div>
   );
 }
