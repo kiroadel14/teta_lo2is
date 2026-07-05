@@ -623,15 +623,19 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
   const playerBoatSrc = level.id === 'level_4' ? PLAYER_BOAT_L4 : PLAYER_BOAT_L1;
   const isNoahLevel = level.id === 'level_4';
 
-  return (
+ return (
     <div
       dir="rtl"
-      className="relative w-full h-full overflow-hidden select-none"
+      // التعديل هنا: خلينا الحاوية الأساسية سنتر، ولونها أسود
+      className="flex items-center justify-center w-full h-full bg-[#111] overflow-hidden select-none"
       style={{ fontFamily: "'Cairo', sans-serif" }}
       onTouchStart={handleTouchStart}
       onTouchMove={isFreeMode ? handleTouchMove : undefined}
       onTouchEnd={handleTouchEnd}
     >
+      {/* التعديل هنا: دي الحاوية الذكية اللي هتمنع اللعبة من إنها تتمط */}
+      <div className="relative w-full h-full max-w-[600px] max-h-[950px] bg-black shadow-2xl overflow-hidden">
+        {/* ── GAME SCENE (SVG) ── */}
       {/* ── GAME SCENE (SVG) ── */}
      <svg
   viewBox="0 0 100 100"
@@ -719,6 +723,12 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               </linearGradient>
             )
           )}
+          {/* ── انعكاس الشمس على الماية ── */}
+          <linearGradient id="waterGlare" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity="0.4" />
+            <stop offset="50%" stopColor="white" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="white" stopOpacity="0.0" />
+          </linearGradient>
 
           {/* ── Horizon mist over road ── */}
           <linearGradient id="roadMist" x1="0" y1="0" x2="0" y2="1">
@@ -889,38 +899,41 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </>
                 )}
 
-             {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
+            {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
                 <polygon
                   points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`}
                   fill="url(#riverWater)"
                 />
-                {/* انعكاس السماء في منتصف النهر لإعطاء واقعية وعمق 3D */}
+                
+                {/* انعكاس الشمس المتدرج لإعطاء واقعية وعمق 3D */}
                 <polygon
-                  points={`${VP_X - 1.5},${HORIZON_Y} ${VP_X + 1.5},${HORIZON_Y} 65,100 35,100`}
-                  fill="white"
-                  opacity="0.08"
+                  points={`${VP_X - 6},${HORIZON_Y} ${VP_X + 6},${HORIZON_Y} 80,100 20,100`}
+                  fill="url(#waterGlare)"
                   style={{ pointerEvents: 'none' }}
                 />
 
-                {/* ── Water ripple lines (animated with scrollOffset) ── */}
-                {[0.2, 0.35, 0.52, 0.68, 0.82].map((tRipple, ri) => {
-                  const tAnim = ((tRipple + scrollOffset * 0.004) % 0.9) + 0.08;
-                  const leftX = riverXAtT(0.1, tAnim);
-                  const rightX = riverXAtT(0.9, tAnim);
-                  const ry = yAtT(tAnim);
-                  const w = rightX - leftX;
+                {/* ── أمواج المياه المتحركة (Dynamic Waves) ── */}
+                {Array.from({ length: 15 }).map((_, wi) => {
+                  // تحريك الأمواج مع السرعة
+                  const tAnim = ((wi / 15) + scrollOffset / 120) % 1;
+                  if (tAnim < 0.02 || tAnim > 0.98) return null;
+                  const y = yAtT(tAnim);
+                  
+                  // تنويع عرض الأمواج عشان تبان طبيعية ومتقطعة
+                  const spread = 0.15 + (wi % 4) * 0.15; 
+                  const lx = riverXAtT(0.5 - spread, tAnim);
+                  const rx = riverXAtT(0.5 + spread, tAnim);
+                  const thickness = 0.1 + tAnim * 1.2;
+                  
                   return (
-                    <ellipse
-                      key={`rip${ri}`}
-                      cx={(leftX + rightX) / 2}
-                      cy={ry}
-                      rx={w * 0.42}
-                      ry={0.2 + tAnim * 0.3}
-                      fill="none"
-                      stroke={isNoahLevel ? "#2A6A48" : "#4FC3F7"}
-                      strokeWidth={0.25 + tAnim * 0.2}
-                      opacity={0.12 + tAnim * 0.18}
-                    />
+                     <line
+                        key={`ww${wi}`}
+                        x1={lx} y1={y} x2={rx} y2={y}
+                        stroke={isNoahLevel ? "#A5D6A7" : "#81D4FA"}
+                        strokeWidth={thickness}
+                        strokeLinecap="round"
+                        opacity={0.15 + tAnim * 0.3}
+                     />
                   );
                 })}
 
@@ -1780,6 +1793,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           50% { opacity: 0.5; }
         }
       `}</style>
+      </div>
     </div>
   );
 }
