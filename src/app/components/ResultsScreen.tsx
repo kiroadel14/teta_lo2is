@@ -91,7 +91,7 @@ export function ResultsScreen({ won, score, stars, levelName, onRetry, onBack }:
           className="text-6xl"
           style={{ fontSize: 'clamp(3rem, 10vw, 5rem)' }}
         >
-          {won ? '🏆' : '🚗💨'}
+          {won ? '🏆' : '💨'}
         </motion.div>
 
         {/* Headline */}

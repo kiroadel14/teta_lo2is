@@ -131,7 +131,7 @@ export function StoryVideoScreen({ level, onPlay, onBack }: StoryVideoScreenProp
               }}
             >
               <span>يلا نلعب!</span>
-              <span style={{ fontSize: '1.4em' }}>🏎️</span>
+              <span style={{ fontSize: '1.4em' }}>😎</span>
             </motion.button>
           </motion.div>
         )}
