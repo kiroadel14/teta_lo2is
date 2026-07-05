@@ -99,15 +99,15 @@ const HORIZON_Y = 33;     // Y of vanishing horizon line
 const ROAD_BOTTOM = 100;   // Bottom of viewbox
 
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
-const ROAD_HALF_BOTTOM = 48;   // 👈 كبرنا العرض من تحت عشان يملى الشاشة أكتر (كان 42)
-const ROAD_HALF_HORIZON = 5.5;  // 👈 كبرنا العرض من عند الأفق في الخلفية (كان 4)
+const ROAD_HALF_BOTTOM = 50;   // 👈 أقصى عرض ممكن! (بيملى الشاشة من تحت للآخر بدون أي مساحات فاضية)
+const ROAD_HALF_HORIZON = 7.5;  // 👈 عرضنا الأفق كمان في الخلفية عشان يديك إحساس إن الشارع مفرود وواسع
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
-const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 32, 16, 0]; // 👈 ظبطنا مسافات خطوط الأسفلت عشان تناسب العرض الجديد
+const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 34, 17, 0]; // 👈 ظبطنا مسافات خطوط الأسفلت عشان تتقسم صح على 3 حارات عراض
 
 // Lane centres at bottom (used for car placement)
-const LANE_CENTERS_BOTTOM = [VP_X - 24, VP_X, VP_X + 24]; // 👈 وسعنا المسافة بين العربيات عشان يفضلوا في نص الحارات
+const LANE_CENTERS_BOTTOM = [VP_X - 33, VP_X, VP_X + 33]; // 👈 بعدنا العربيات عن بعض عشان كل عربية تاخد راحتها في الحارة بتاعتها
 
 // Road continuation "crest" above the horizon — key illusion
 const CREST_Y = HORIZON_Y - 5;
