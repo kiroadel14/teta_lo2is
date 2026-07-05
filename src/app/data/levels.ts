@@ -121,8 +121,8 @@ export const LEVELS: Level[] = [
     bgColor: '#FEF3C7',
     emoji: '🏜️',
     survivalTargetDistance: 500,
-    obstacleSpeed: 0.009,
-    spawnRate: 45,
+    obstacleSpeed: 0.005,
+    spawnRate: 70,
     locked: true,
     movementMode: 'flappy',
     questions: [
@@ -178,8 +178,8 @@ export const LEVELS: Level[] = [
     bgColor: '#FFEDD5',
     emoji: '⭐',
     survivalTargetDistance: 600,
-    obstacleSpeed: 0.008,
-    spawnRate: 40,
+    obstacleSpeed: 0.007,
+    spawnRate: 65,
     locked: true,
     movementMode: 'flappy',
     questions: [

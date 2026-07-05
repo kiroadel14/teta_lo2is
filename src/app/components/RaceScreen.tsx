@@ -65,6 +65,10 @@ interface WakeParticle {
   age: number;
 }
 
+interface FuelPenaltyFeedback {
+  id: number;
+}
+
 interface RaceScreenProps {
   level: Level;
   onGameOver: (result: { won: boolean; score: number; stars: number }) => void;
@@ -214,6 +218,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const [showGasStation, setShowGasStation] = useState(false);
   const [gasStationVisited, setGasStationVisited] = useState(false);
   const [showCollision, setShowCollision] = useState(false);
+  const [fuelPenaltyFeedbacks, setFuelPenaltyFeedbacks] = useState<FuelPenaltyFeedback[]>([]);
   const [laneIndicator, setLaneIndicator] = useState<'left' | 'right' | null>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
 
@@ -231,6 +236,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const spawnFrameCounter = useRef(0);
   const gameOverFiredRef = useRef(false);
   const collisionCooldownRef = useRef(0);
+  const fuelPenaltyFeedbackIdRef = useRef(0);
+  const fuelPenaltyTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // ── Free-mode specific refs ──────────────────────────────────────────────
   const playerXRef = useRef(0.5);   // normalized 0-1 across river width
@@ -285,6 +292,11 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   // Sync refs with state
   useEffect(() => { pausedRef.current = paused; }, [paused]);
   useEffect(() => { playerLaneRef.current = playerLane; }, [playerLane]);
+  useEffect(() => {
+    return () => {
+      fuelPenaltyTimersRef.current.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   // ── LANE MODE: discrete move functions ────────────────────────────────────
   const moveLeft = useCallback(() => {
@@ -540,7 +552,14 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
             // 👇 السطر الجديد اللي ضفناه عشان يشغل صوت الخبطة
             crashRef.current?.play().catch(() => { });
             collisionCooldownRef.current = 90;
-            fuelRef.current = Math.max(0, fuelRef.current - 20);
+            fuelRef.current = Math.max(0, fuelRef.current - 5);
+            const feedbackId = fuelPenaltyFeedbackIdRef.current++;
+            setFuelPenaltyFeedbacks((feedbacks) => [...feedbacks.slice(-2), { id: feedbackId }]);
+            const feedbackTimer = setTimeout(() => {
+              setFuelPenaltyFeedbacks((feedbacks) => feedbacks.filter((feedback) => feedback.id !== feedbackId));
+              fuelPenaltyTimersRef.current = fuelPenaltyTimersRef.current.filter((timer) => timer !== feedbackTimer);
+            }, 900);
+            fuelPenaltyTimersRef.current.push(feedbackTimer);
             setShowCollision(true);
             setTimeout(() => setShowCollision(false), 600);
           }
@@ -610,6 +629,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
   const fuelBarColor =
     fuelState === 'critical' ? '#EF4444' :
       fuelState === 'low' ? '#F59E0B' : '#22C55E';
+  const fuelVisualPercent = Math.max(0, Math.min(100, fuel));
 
   // Clouds positions (static for now)
   const clouds = [
@@ -1579,7 +1599,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
           {/* Fuel gauge */}
           <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl shadow-lg"
+            className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-2xl shadow-lg"
             style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)', pointerEvents: 'none', minWidth: '30%' }}
           >
             <span
@@ -1592,14 +1612,40 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
             </span>
             <div className="flex-1 h-3 bg-white/20 rounded-full overflow-hidden">
               <div
-                className="h-full rounded-full transition-all duration-300"
+                className="h-full rounded-full"
                 style={{
-                  width: `${fuel}%`,
+                  width: `${fuelVisualPercent}%`,
                   backgroundColor: fuelBarColor,
                   boxShadow: fuelState !== 'normal' ? `0 0 6px ${fuelBarColor}` : 'none',
                 }}
               />
             </div>
+            <AnimatePresence initial={false}>
+              {fuelPenaltyFeedbacks.map((feedback, index) => (
+                <motion.span
+                  key={feedback.id}
+                  dir="ltr"
+                  className="absolute"
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                  transition={{ duration: 0.85, ease: 'easeOut' }}
+                  style={{
+                    top: -22 - index * 8,
+                    right: 18 + index * 14,
+                    color: '#FF2D2D',
+                    fontSize: '0.95rem',
+                    fontWeight: 900,
+                    lineHeight: 1,
+                    fontFamily: "'Cairo', sans-serif",
+                    textShadow: '0 1px 2px rgba(0,0,0,0.75), 0 0 4px rgba(255,45,45,0.45)',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  -5
+                </motion.span>
+              ))}
+            </AnimatePresence>
             <span
               className="text-white"
               style={{ fontSize: 'clamp(0.6rem, 1.5vw, 0.8rem)', fontWeight: 700, fontFamily: "'Cairo', sans-serif" }}
