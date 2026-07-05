@@ -617,9 +617,30 @@ function perspX(bottomOffset: number, t: number): number {
 | 14 | Red vignette (low/critical fuel warning) |
 | 15 | Collision flash (solid red overlay, 600ms) |
 
+### 5.2 River / Free-Mode Visual System (Levels 1 and 4)
+
+Levels 1 and 4 use `movementMode: 'free'` and reuse the same perspective helpers (`perspX`, `roadLeftX`, `roadRightX`, `riverXAtT`, `yAtT`) for the river channel. This is a pure SVG rendering pass; gameplay, collision, fuel, coins, and quiz logic remain shared with the rest of `RaceScreen.tsx`.
+
+River-mode visual layers and definitions:
+
+| System | Implementation |
+|---|---|
+| Water material | `riverWater` is a per-level radial gradient in `<defs>`: Level 1 uses deep blue through turquoise to pale horizon water; Level 4 uses darker storm-water colors. The central river trapezoid geometry is unchanged. |
+| Horizon sheen | `riverHorizonSheen` overlays the river trapezoid with a white/cyan vertical fade for fresnel-style horizon brightening. |
+| Wet sand | `wetSandLeft` and `wetSandRight` are side-specific linear gradients drawn as narrow polygons just outside the water edge before the river surface. |
+| Shoreline foam | Continuous white/cyan SVG paths follow both bank edges via `shorelinePath()`, with small foam ellipses layered on top for broken surf detail. |
+| Horizon mist | The existing `roadMist` atmospheric overlay is reused over the free-mode river vanishing area to soften the water-to-mountain horizon. |
+| Wake particles | `WakeParticle` refs emit small fading white ellipses behind the player boat in free mode, capped at 30 particles and synced to React state only for rendering. |
+| Layered waves | Four animated wavy SVG paths scroll down the river using `scrollOffset`, each with a slightly different speed, amplitude, and phase. |
+| Sparkles | `WATER_SPARKLES` defines a low-count set of radial-gradient ellipses using `waterSparkle`; they drift with `scrollOffset` and pulse opacity for specular highlights. |
+| Ripples | Existing animated ellipse ripple lines remain on the water surface and are driven by `scrollOffset`. |
+| Mountains | Free mode recolors far mountain polygons to cooler desaturated blue-greys and applies lighter peak caps for atmospheric distance. |
+| Clouds | Level 1 uses the richer multi-ellipse cloud groups already used elsewhere; Level 4 keeps storm-cloud groups appropriate to Noah's Ark. |
+| Bank props | Level 1 palms, huts, and umbrellas use stable deterministic placement variation from `BANK_DECOR_VARIANTS` plus soft low-opacity ellipse shadows under each prop. Level 4 banks use rocky cliff shapes and an ark silhouette. |
+
 ---
 
-### 5.2 Game Loop
+### 5.3 Game Loop
 
 Implemented using `requestAnimationFrame` inside a `useEffect` with refs for performance-critical state.
 
@@ -652,7 +673,7 @@ Coin spawning, movement, collection, HUD updates, and pickup sound playback all 
 
 ---
 
-### 5.3 Fuel System
+### 5.4 Fuel System
 
 ```
 Initial fuel: 100%
@@ -680,7 +701,7 @@ Fuel refill per correct answer: +25% (capped at 100%)
 
 ---
 
-### 5.4 Scoring System
+### 5.5 Scoring System
 
 ```
 score = Math.floor(distanceRef.current)
@@ -706,7 +727,7 @@ Current implementation note: `scoreRef.current` is the raw distance score. Coins
 
 ---
 
-### 5.5 Coin System
+### 5.6 Coin System
 
 Coins are implemented entirely in `RaceScreen.tsx`; `levels.ts` does not define per-level coin data, and Firestore has no coin-specific fields.
 
@@ -743,7 +764,7 @@ Coins do not affect fuel, gas-station questions, collisions, unlocks, Firestore 
 
 ---
 
-### 5.6 Obstacle System
+### 5.7 Obstacle System
 
 ```typescript
 interface Obstacle {
@@ -769,7 +790,7 @@ Rendering: perspX/laneXAtT functions place car at correct screen position
 
 ---
 
-### 5.7 Level Difficulty Scaling
+### 5.8 Level Difficulty Scaling
 
 | Level | Mode | Target Distance | Obstacle Speed | Spawn Rate (frames) |
 |---|---|---|---|---|
@@ -784,7 +805,7 @@ Higher levels = faster obstacles + more frequent spawns + longer race required.
 
 ---
 
-### 5.8 Audio System
+### 5.9 Audio System
 
 All audio uses the Web Audio API via `new Audio(src)`. No audio library used.
 

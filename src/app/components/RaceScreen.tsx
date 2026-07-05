@@ -216,6 +216,35 @@ const BANK_DECORATIONS = [
   { side: 'R' as const, type: 'palm', t: 0.83, spread: 6 },
 ];
 
+const BANK_DECOR_VARIANTS = [
+  { offset: -0.28, y: 0.10, scale: 0.92, rotate: -3 },
+  { offset: 0.18, y: -0.04, scale: 1.06, rotate: 2 },
+  { offset: -0.08, y: 0.14, scale: 0.98, rotate: -1 },
+  { offset: 0.34, y: -0.08, scale: 1.12, rotate: 3 },
+  { offset: -0.20, y: 0.05, scale: 1.03, rotate: -2 },
+  { offset: 0.10, y: 0.12, scale: 0.95, rotate: 1 },
+];
+
+const WATER_SPARKLES = [
+  { x: 0.34, t: 0.18, rx: 1.6, ry: 0.42, phase: 0.1, opacity: 0.70 },
+  { x: 0.62, t: 0.24, rx: 2.0, ry: 0.48, phase: 1.8, opacity: 0.78 },
+  { x: 0.48, t: 0.36, rx: 2.3, ry: 0.52, phase: 2.5, opacity: 0.56 },
+  { x: 0.71, t: 0.46, rx: 1.9, ry: 0.46, phase: 4.2, opacity: 0.72 },
+  { x: 0.29, t: 0.58, rx: 2.5, ry: 0.58, phase: 3.4, opacity: 0.50 },
+  { x: 0.57, t: 0.68, rx: 2.2, ry: 0.52, phase: 5.0, opacity: 0.60 },
+  { x: 0.76, t: 0.78, rx: 1.7, ry: 0.44, phase: 2.9, opacity: 0.70 },
+  { x: 0.42, t: 0.88, rx: 2.8, ry: 0.62, phase: 0.8, opacity: 0.48 },
+];
+
+function shorelinePath(side: 'L' | 'R', inset: number): string {
+  const samples = [0, 0.18, 0.36, 0.54, 0.72, 0.9, 1];
+  return samples.map((t, i) => {
+    const x = side === 'L' ? roadLeftX(t) + inset : roadRightX(t) - inset;
+    const y = yAtT(t);
+    return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
+  }).join(' ');
+}
+
 export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const isFreeMode = level.movementMode === 'free';
   const isFlappyMode = level.movementMode === 'flappy';
@@ -484,14 +513,14 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
           // ── Wake particles ─────────────────────────────────────────────
           // Emit 2 particles behind the player each frame
           const px = riverXAtT(playerXRef.current, 1.0);
-          const py = yAtT(1.0) - 2; // just behind/above the boat bottom
-          const p1: WakeParticle = { id: wakeIdCounter.current++, x: px - 1.2, y: py, opacity: 0.7, age: 0 };
-          const p2: WakeParticle = { id: wakeIdCounter.current++, x: px + 1.2, y: py, opacity: 0.7, age: 0 };
+          const py = yAtT(1.0) - 8;
+          const p1: WakeParticle = { id: wakeIdCounter.current++, x: px - 2.1, y: py, opacity: 0.9, age: 0 };
+          const p2: WakeParticle = { id: wakeIdCounter.current++, x: px + 2.1, y: py, opacity: 0.9, age: 0 };
           wakeParticlesRef.current = [
-            ...wakeParticlesRef.current.map((p) => ({ ...p, age: p.age + 1, opacity: Math.max(0, 0.7 - p.age * 0.045) }))
+            ...wakeParticlesRef.current.map((p) => ({ ...p, age: p.age + 1, y: p.y + 0.18, opacity: Math.max(0, 0.9 - p.age * 0.045) }))
               .filter((p) => p.opacity > 0.02),
             p1, p2,
-          ].slice(-30); // cap at 30 particles
+          ].slice(-38); // cap at 38 particles
         }
 
         // ── Spawn obstacles ────────────────────────────────────────────────
@@ -837,18 +866,45 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           {/* ── River water surface (free mode) ── */}
           {isFreeMode && (
             isNoahLevel ? (
-              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
-  <stop offset="0%" stopColor="#4FC3F7" /> 
-  <stop offset="50%" stopColor="#29B6F6" />
-  <stop offset="100%" stopColor="#0277BD" /> 
-</linearGradient>
+              <radialGradient id="riverWater" gradientUnits="userSpaceOnUse" cx="50" cy="96" r="78" fx="50" fy="100">
+                <stop offset="0%" stopColor="#082E58" />
+                <stop offset="45%" stopColor="#0B6F86" />
+                <stop offset="78%" stopColor="#52C7CE" />
+                <stop offset="100%" stopColor="#D8F8F5" />
+              </radialGradient>
             ) : (
-              <linearGradient id="riverWater" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1565C0" />
-                <stop offset="50%" stopColor="#0D47A1" />
-                <stop offset="100%" stopColor="#0A2E6C" />
-              </linearGradient>
+              <radialGradient id="riverWater" gradientUnits="userSpaceOnUse" cx="50" cy="96" r="78" fx="50" fy="100">
+                <stop offset="0%" stopColor="#06255C" />
+                <stop offset="44%" stopColor="#075BA4" />
+                <stop offset="76%" stopColor="#22B8CC" />
+                <stop offset="100%" stopColor="#E7FFFA" />
+              </radialGradient>
             )
+          )}
+
+          {isFreeMode && (
+            <>
+              <linearGradient id="wetSandLeft" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={isNoahLevel ? "#3D2D25" : "#A67132"} stopOpacity="0" />
+                <stop offset="60%" stopColor={isNoahLevel ? "#5F4A39" : "#B6843F"} stopOpacity="0.75" />
+                <stop offset="100%" stopColor={isNoahLevel ? "#77624D" : "#D6B061"} stopOpacity="0.88" />
+              </linearGradient>
+              <linearGradient id="wetSandRight" x1="1" y1="0" x2="0" y2="0">
+                <stop offset="0%" stopColor={isNoahLevel ? "#3D2D25" : "#A67132"} stopOpacity="0" />
+                <stop offset="60%" stopColor={isNoahLevel ? "#5F4A39" : "#B6843F"} stopOpacity="0.75" />
+                <stop offset="100%" stopColor={isNoahLevel ? "#77624D" : "#D6B061"} stopOpacity="0.88" />
+              </linearGradient>
+              <linearGradient id="riverHorizonSheen" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.42" />
+                <stop offset="35%" stopColor="#BFF8FF" stopOpacity="0.16" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </linearGradient>
+              <radialGradient id="waterSparkle" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
+                <stop offset="45%" stopColor="#E8FFFF" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+              </radialGradient>
+            </>
           )}
 
           {/* ── Sandy bank gradient (free mode) ── */}
@@ -1018,13 +1074,13 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
             {/* Layer A: farthest, most desaturated blue-grey */}
            {/* Layer A: farthest, most desaturated blue-grey (Tropical Style) */}
-<polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7B8EC5"} opacity="0.45" />
-<polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6E82BE"} opacity="0.45" />
-<polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6878B8"} opacity="0.50" />
-<polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7080C0"} opacity="0.42" />
-<polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#6575B8"} opacity="0.50" />
-<polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7082BE"} opacity="0.45" />
-<polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#5C7D8A" : "#7A8EC5"} opacity="0.42" />
+<polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#9DB6BE" : "#7B8EC5"} opacity={isFreeMode ? "0.38" : "0.45"} />
+<polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#8FADB8" : "#6E82BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
+<polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#88A8B5" : "#6878B8"} opacity={isFreeMode ? "0.40" : "0.50"} />
+<polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#A8BEC4" : "#7080C0"} opacity={isFreeMode ? "0.32" : "0.42"} />
+<polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#7FA2B0" : "#6575B8"} opacity={isFreeMode ? "0.38" : "0.50"} />
+<polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#90ACB7" : "#7082BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
+<polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#A7BBC1" : "#7A8EC5"} opacity={isFreeMode ? "0.34" : "0.42"} />
            {/* Layer B: mid range (Tropical Forest Style) */}
 <polygon points={`-2,${HORIZON_Y} 10,${HORIZON_Y - 11} 20,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.72" />
 <polygon points={`14,${HORIZON_Y} 26,${HORIZON_Y - 15} 38,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
@@ -1032,9 +1088,9 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 <polygon points={`60,${HORIZON_Y} 72,${HORIZON_Y - 14} 84,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
 <polygon points={`78,${HORIZON_Y} 88,${HORIZON_Y - 10} 100,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.70" />
            {/* Tallest peak tips (Tropical Forest Canopy Style) */}
-<polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
-<polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
-<polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#1E5A1E" : "white"} opacity="0.6" />
+<polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.48" : "0.6"} />
+<polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.50" : "0.6"} />
+<polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.52" : "0.6"} />
             {/* ═══════════════════════════════════════
             FREE MODE: GROUND — Sandy canyon banks + river
             LANE MODE: GROUND — Grass hills
@@ -1044,6 +1100,16 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               <>
                 {/* ── LAYER 3 (free): Sandy ground base fills the bottom area ── */}
                 <rect x="0" y={HORIZON_Y} width="100" height={ROAD_BOTTOM - HORIZON_Y + 5} fill="url(#sandBank)" />
+                <polygon
+                  points={`${RHL - 2.2},${HORIZON_Y} ${RHL + 0.5},${HORIZON_Y} 2,100 -9,100`}
+                  fill="url(#wetSandLeft)"
+                  opacity="0.78"
+                />
+                <polygon
+                  points={`${RHR - 0.5},${HORIZON_Y} ${RHR + 2.2},${HORIZON_Y} 109,100 98,100`}
+                  fill="url(#wetSandRight)"
+                  opacity="0.78"
+                />
 
                 {/* ── LAYER 4 (free): Storm clouds for Noah's Ark level ── */}
                 {isNoahLevel && (
@@ -1065,14 +1131,85 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`}
                   fill="url(#riverWater)"
                 />
+                <polygon
+                  points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`}
+                  fill="url(#riverHorizonSheen)"
+                  opacity="0.75"
+                  style={{ pointerEvents: 'none' }}
+                />
                 
                 {/* انعكاس السماء في منتصف النهر لإعطاء واقعية وعمق 3D */}
                 <polygon
-                  points={`${VP_X - 1.5},${HORIZON_Y} ${VP_X + 1.5},${HORIZON_Y} 65,100 35,100`}
+                  points={`${VP_X - 2.2},${HORIZON_Y} ${VP_X + 1.2},${HORIZON_Y} 58,100 41,100`}
                   fill="white"
-                  opacity="0.08"
+                  opacity="0.028"
                   style={{ pointerEvents: 'none' }}
                 />
+
+                <path
+                  d={`M ${riverXAtT(0.35, 0.12)} ${yAtT(0.12)}
+                    C ${riverXAtT(0.55, 0.24)} ${yAtT(0.24)}, ${riverXAtT(0.44, 0.42)} ${yAtT(0.42)}, ${riverXAtT(0.58, 0.58)} ${yAtT(0.58)}
+                    S ${riverXAtT(0.46, 0.84)} ${yAtT(0.84)}, ${riverXAtT(0.61, 1)} ${yAtT(1)}`}
+                  fill="none"
+                  stroke={isNoahLevel ? "#7EDDD7" : "#77E0EF"}
+                  strokeWidth="8.5"
+                  strokeOpacity="0.13"
+                  strokeLinecap="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <path
+                  d={`M ${riverXAtT(0.70, 0.18)} ${yAtT(0.18)}
+                    C ${riverXAtT(0.58, 0.32)} ${yAtT(0.32)}, ${riverXAtT(0.74, 0.50)} ${yAtT(0.50)}, ${riverXAtT(0.63, 0.70)}
+                    ${yAtT(0.70)} S ${riverXAtT(0.72, 0.92)} ${yAtT(0.92)}, ${riverXAtT(0.66, 1)} ${yAtT(1)}`}
+                  fill="none"
+                  stroke={isNoahLevel ? "#0A4468" : "#0B5D9B"}
+                  strokeWidth="10"
+                  strokeOpacity="0.14"
+                  strokeLinecap="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+                {[0.18, 0.31, 0.47, 0.62, 0.79, 0.91].map((tPatch, pi) => {
+                  const x = riverXAtT([0.32, 0.66, 0.43, 0.73, 0.54, 0.38][pi], tPatch);
+                  const y = yAtT(tPatch);
+                  const sc = 0.8 + tPatch * 2.3;
+                  return (
+                    <ellipse
+                      key={`mottle${pi}`}
+                      cx={x}
+                      cy={y}
+                      rx={sc * (pi % 2 === 0 ? 2.1 : 1.5)}
+                      ry={sc * 0.32}
+                      fill={pi % 2 === 0 ? "#B8F8FF" : "#075083"}
+                      opacity={pi % 2 === 0 ? 0.14 : 0.12}
+                      transform={`rotate(${pi % 2 === 0 ? -7 : 9} ${x} ${y})`}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  );
+                })}
+
+                {[0.16, 0.33, 0.51, 0.70].map((tWave, wi) => {
+                  const tAnim = ((tWave + scrollOffset * (0.0025 + wi * 0.0008)) % 0.9) + 0.08;
+                  const y = yAtT(tAnim);
+                  const leftX = riverXAtT(0.08, tAnim);
+                  const rightX = riverXAtT(0.92, tAnim);
+                  const width = rightX - leftX;
+                  const amp = 0.55 + wi * 0.16;
+                  const phase = (wi * 1.7 + level.id.length * 0.3) % 3;
+                  const c1x = leftX + width * 0.24;
+                  const c2x = leftX + width * 0.48;
+                  const c3x = leftX + width * 0.72;
+                  return (
+                    <path
+                      key={`wave${wi}`}
+                      d={`M ${leftX} ${y} C ${c1x} ${y - amp - phase * 0.12}, ${c2x} ${y + amp}, ${c3x} ${y} S ${rightX - width * 0.12} ${y - amp * 0.6}, ${rightX} ${y + amp * 0.25}`}
+                      fill="none"
+                      stroke={isNoahLevel ? "#D1FAF5" : "#DFFBFF"}
+                      strokeWidth={0.28 + tAnim * 0.34}
+                      opacity={0.24 + tAnim * 0.18}
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
 
                 {/* ── Water ripple lines (animated with scrollOffset) ── */}
                 {[0.2, 0.35, 0.52, 0.68, 0.82].map((tRipple, ri) => {
@@ -1098,6 +1235,85 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
                 {/* ── LAYER 6 (free): Foam edge lines along both banks ── */}
                 {/* Left foam edge */}
+                {WATER_SPARKLES.map((sparkle, si) => {
+                  const tAnim = ((sparkle.t + scrollOffset * (0.0012 + si * 0.00012)) % 0.9) + 0.06;
+                  const pulse = 0.55 + 0.45 * Math.sin(scrollOffset * 0.035 + sparkle.phase);
+                  const scale = 0.5 + tAnim * 0.9;
+                  const sx = riverXAtT(sparkle.x, tAnim);
+                  const sy = yAtT(tAnim);
+                  const opacity = sparkle.opacity * pulse;
+                  return (
+                    <g key={`sparkle${si}`} opacity={opacity} style={{ pointerEvents: 'none' }}>
+                      <ellipse
+                        cx={sx}
+                        cy={sy}
+                        rx={sparkle.rx * scale}
+                        ry={sparkle.ry * scale}
+                        fill="url(#waterSparkle)"
+                      />
+                      <line
+                        x1={sx - sparkle.rx * scale * 0.75}
+                        y1={sy}
+                        x2={sx + sparkle.rx * scale * 0.75}
+                        y2={sy}
+                        stroke="#FFFFFF"
+                        strokeWidth={0.13 + tAnim * 0.08}
+                        strokeLinecap="round"
+                      />
+                      <line
+                        x1={sx}
+                        y1={sy - sparkle.ry * scale * 1.2}
+                        x2={sx}
+                        y2={sy + sparkle.ry * scale * 1.2}
+                        stroke="#E8FFFF"
+                        strokeWidth={0.09 + tAnim * 0.06}
+                        strokeLinecap="round"
+                      />
+                    </g>
+                  );
+                })}
+
+                <path
+                  d={shorelinePath('L', 0.65)}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="0.62"
+                  strokeOpacity={isNoahLevel ? 0.36 : 0.52}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <path
+                  d={shorelinePath('R', 0.65)}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="0.62"
+                  strokeOpacity={isNoahLevel ? 0.36 : 0.52}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <path
+                  d={shorelinePath('L', 1.55)}
+                  fill="none"
+                  stroke={isNoahLevel ? "#D9F6F1" : "#E9FFFB"}
+                  strokeWidth="0.26"
+                  strokeOpacity={isNoahLevel ? 0.28 : 0.42}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+                <path
+                  d={shorelinePath('R', 1.55)}
+                  fill="none"
+                  stroke={isNoahLevel ? "#D9F6F1" : "#E9FFFB"}
+                  strokeWidth="0.26"
+                  strokeOpacity={isNoahLevel ? 0.28 : 0.42}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ pointerEvents: 'none' }}
+                />
+
                 {[0.15, 0.25, 0.38, 0.52, 0.66, 0.80, 0.91].map((t, fi) => {
                   const fx = roadLeftX(t);
                   const fy = yAtT(t);
@@ -1198,14 +1414,17 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     const by = yAtT(tAnim);
                     
                     // 4. تكبير العنصر بحدة (Scale) كل ما يقرب من أسفل الشاشة
-                    const sc = 0.15 + Math.pow(tAnim, 1.5) * 2;
+                    const variant = BANK_DECOR_VARIANTS[di % BANK_DECOR_VARIANTS.length];
+                    const sc = (0.15 + Math.pow(tAnim, 1.5) * 2) * variant.scale;
                     const sign = side === 'L' ? -1 : 1;
                     
                     // 5. حساب البعد عن النهر لضمان التناسق البصري
-                     const tx = bx + sign * (spread * sc * 1.2 + Math.pow(tAnim, 2) * 15);
+                     const tx = bx + sign * (spread * sc * 1.2 + Math.pow(tAnim, 2) * 15 + variant.offset * sc);
+                    const ty = by + variant.y * sc;
                     if (type === 'palm') {
                       return (
-                        <g key={`dec${di}`} transform={`translate(${tx},${by})`}>
+                        <g key={`dec${di}`} transform={`translate(${tx},${ty}) rotate(${variant.rotate * 0.35})`}>
+                          <ellipse cx={0} cy={0.35 * sc} rx={2.2 * sc} ry={0.42 * sc} fill="#4A2A12" opacity="0.20" />
                           {/* Trunk */}
                           <rect x={-0.4 * sc} y={-8 * sc} width={0.8 * sc} height={8 * sc}
                             fill="#8B6914" rx={0.3 * sc} />
@@ -1226,7 +1445,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     }
                     if (type === 'hut') {
                       return (
-                        <g key={`dec${di}`} transform={`translate(${tx},${by})`}>
+                        <g key={`dec${di}`} transform={`translate(${tx},${ty}) rotate(${variant.rotate})`}>
+                          <ellipse cx={0} cy={0.35 * sc} rx={3.4 * sc} ry={0.55 * sc} fill="#4A2A12" opacity="0.22" />
                           {/* Hut walls */}
                           <rect x={-2.5 * sc} y={-4 * sc} width={5 * sc} height={4 * sc}
                             fill="#F4D03F" rx={0.4 * sc} />
@@ -1247,7 +1467,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     }
                     if (type === 'umbrella') {
                       return (
-                        <g key={`dec${di}`} transform={`translate(${tx},${by})`}>
+                        <g key={`dec${di}`} transform={`translate(${tx},${ty}) rotate(${variant.rotate})`}>
+                          <ellipse cx={0} cy={0.25 * sc} rx={3.1 * sc} ry={0.42 * sc} fill="#4A2A12" opacity="0.18" />
                           {/* Pole */}
                           <rect x={-0.2 * sc} y={-5 * sc} width={0.4 * sc} height={5 * sc}
                             fill="#8B7355" />
@@ -1284,10 +1505,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     key={wp.id}
                     cx={wp.x}
                     cy={wp.y}
-                    rx={1.4}
-                    ry={0.45}
+                    rx={1.8 + wp.age * 0.06}
+                    ry={0.45 + wp.age * 0.012}
                     fill="white"
-                    opacity={wp.opacity}
+                    opacity={wp.opacity * 0.72}
                   />
                 ))}
 
@@ -1397,8 +1618,25 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       transition={{ type: 'tween', duration: 0.05, ease: 'linear' }}
                     >
                       {/* Player wake */}
-                      <ellipse cx={-s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
-                      <ellipse cx={s * 0.55} cy={s * 0.3} rx={s * 1.0} ry={s * 0.22} fill="white" opacity="0.35" />
+                      <path
+                        d={`M ${-s * 0.18} ${s * 0.08} C ${-s * 0.75} ${s * 0.22}, ${-s * 1.08} ${s * 0.52}, ${-s * 1.35} ${s * 0.76}`}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth={s * 0.16}
+                        strokeOpacity="0.66"
+                        strokeLinecap="round"
+                      />
+                      <path
+                        d={`M ${s * 0.18} ${s * 0.08} C ${s * 0.75} ${s * 0.22}, ${s * 1.08} ${s * 0.52}, ${s * 1.35} ${s * 0.76}`}
+                        fill="none"
+                        stroke="white"
+                        strokeWidth={s * 0.16}
+                        strokeOpacity="0.66"
+                        strokeLinecap="round"
+                      />
+                      <ellipse cx={-s * 0.55} cy={s * 0.42} rx={s * 1.1} ry={s * 0.18} fill="white" opacity="0.38" />
+                      <ellipse cx={s * 0.55} cy={s * 0.42} rx={s * 1.1} ry={s * 0.18} fill="white" opacity="0.38" />
+                      <ellipse cx={0} cy={s * 0.62} rx={s * 0.65} ry={s * 0.12} fill="#DFFBFF" opacity="0.42" />
                       {/* Boat shadow */}
                       <ellipse
                         cx="0"
