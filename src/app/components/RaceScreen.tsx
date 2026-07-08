@@ -107,24 +107,20 @@ function toArabicNumerals(n: number): string {
 //   • Crest strip above horizon shows road "going over the hill"
 // ─────────────────────────────────────────────────────────────
 
-const VP_X = 50;           // Vanishing point x (dead centre)
-const HORIZON_Y = 33;     // Y of vanishing horizon line
-const ROAD_BOTTOM = 100;   // Bottom of viewbox
+// ── ROAD GEOMETRY  (100×100 viewBox units) ──
+const VP_X = 50;           
+const HORIZON_Y = 33;     
+const ROAD_BOTTOM = 100;   
 
-// Road width at bottom and at horizon (in viewBox units from VP_X each side)
-const ROAD_HALF_BOTTOM = 50;   // 👈 أقصى عرض ممكن! (بيملى الشاشة من تحت للآخر بدون أي مساحات فاضية)
-const ROAD_HALF_HORIZON = 7.5;  // 👈 عرضنا الأفق كمان في الخلفية عشان يديك إحساس إن الشارع مفرود وواسع
+// التعديلات الجديدة عشان نعرض الطريق ونظبط المسافات مع الزوم
+const ROAD_HALF_BOTTOM = 35;   
+const ROAD_HALF_HORIZON = 6;  
 
-// Lane divider inner edges (bottom x, mirrored around VP_X)
-// 3 lanes → 4 edges.  Outer edges = road edges.
-const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 34, 17, 0]; // 👈 ظبطنا مسافات خطوط الأسفلت عشان تتقسم صح على 3 حارات عراض
+const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 23, 11.5, 0]; 
+const LANE_CENTERS_BOTTOM = [VP_X - 23, VP_X, VP_X + 23]; 
 
-// Lane centres at bottom (used for car placement)
-const LANE_CENTERS_BOTTOM = [VP_X - 33, VP_X, VP_X + 33]; // 👈 بعدنا العربيات عن بعض عشان كل عربية تاخد راحتها في الحارة بتاعتها
-
-// Road continuation "crest" above the horizon — key illusion
 const CREST_Y = HORIZON_Y - 5;
-const CREST_HALF = ROAD_HALF_HORIZON * 0.55;  // narrower as it crests the hill
+const CREST_HALF = ROAD_HALF_HORIZON * 0.55;
 
 /**
  * True perspective projection.
@@ -807,9 +803,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
       onTouchMove={isFreeMode ? handleTouchMove : undefined}
       onTouchEnd={handleTouchEnd}
     >
-      {/* ── GAME SCENE (SVG) ── */}
+     {/* ── GAME SCENE (SVG) ── */}
       <svg
-        viewBox="0 0 100 100"
+        // السر هنا: لو طيارة هيفضل 100، لو عربيات أو مراكب هنعمل زوم بالعرض (76) عشان يلغي المط على الموبايل
+        viewBox={isFlappyMode ? "0 0 100 100" : "12 0 76 100"}
         preserveAspectRatio="none" 
         className="absolute inset-0 w-full h-full"
         style={{ display: 'block' }}
@@ -1570,12 +1567,12 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                           {/* صورة القرش (تم تكبيرها ورفعها قليلاً) */}
                           <image
                             href={imgSrc}
-                            x={-s * 1.4}
-                            y={-s * 0.9}
-                            width={s * 2.8}
-                            height={s * 2.8}
+                            x={-s * 1.2}
+                            y={isShark ? -s * 0.2 : -s * 0.8} 
+                            width={s * 2.4}
+                            height={s * 2.4}
                             preserveAspectRatio="xMidYMid meet"
-                            clipPath="url(#sharkClip)"
+                            clipPath={isShark ? "url(#sharkClip)" : undefined} 
                           />
                         </>
                       ) : (
@@ -1912,10 +1909,9 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       
                       <image
                         href={imgSrc}
-                        x={-s * 1.4}
-                        // لو شحم ننزله تحت يلزق في الأرض (-0.8)، لو عربية نسيبها مرفوعة في مستواها (-1.4)
+                        x={-s * 1.2}
                         y={isGrease ? -s * 0.8 : -s * 1.4}
-                        width={s * 2.8}
+                        width={s * 2.4}
                         height={s * 2.2}
                         preserveAspectRatio="xMidYMid meet"
                       />
@@ -1940,7 +1936,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                         fill="black"
                         opacity="0.25"
                       />
-                      <image
+                     <image
                         href={playerCarImg}
                         x={-s * 1.25}
                         y={-s * 1.15}
