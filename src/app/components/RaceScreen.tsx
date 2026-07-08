@@ -418,6 +418,11 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 
   // Lane mode touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
+    // 👇 ده السطر اللي هيجبر الصوت يشتغل أول ما يلمس الشاشة لو كان معلق
+    if (mainLoopRef.current && mainLoopRef.current.paused && !paused) {
+      mainLoopRef.current.play().catch(() => {});
+    }
+
     touchStartX.current = e.touches[0].clientX;
     if (isFreeMode) {
       touchXRef.current = e.touches[0].clientX;
@@ -521,7 +526,7 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
             ...wakeParticlesRef.current.map((p) => ({ ...p, age: p.age + 1, y: p.y + 0.18, opacity: Math.max(0, 0.9 - p.age * 0.045) }))
               .filter((p) => p.opacity > 0.02),
             p1, p2,
-          ].slice(-38); // cap at 38 particles
+          ].slice(-20); // cap at 38 particles
         }
 
         // ── Spawn obstacles ────────────────────────────────────────────────
@@ -810,8 +815,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
     >
      {/* ── GAME SCENE (SVG) ── */}
       <svg
-        // السر هنا: لو طيارة هيفضل 100، لو عربيات أو مراكب هنعمل زوم بالعرض (76) عشان يلغي المط على الموبايل
-        viewBox={isFlappyMode ? "0 0 100 100" : "12 0 76 100"}
+        // التعديل هنا: خلينا العرض 70 بدل 100 عشان اللعبة تعرض على اللاب فتتظبط على التليفون
+        viewBox={isFlappyMode ? "0 0 100 100" : "15 0 70 100"}
         preserveAspectRatio="none" 
         className="absolute inset-0 w-full h-full"
         style={{ display: 'block' }}
@@ -1544,67 +1549,61 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 );
               })}
 
-              {/* ── LAYER 11 (free): Sharks & Rocks ── */}
+            {/* ── LAYER 11 (free): Sharks & Rocks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6; // سكيل التكبير
                   if (s < 0.5) return null;
                   
-                  // تحديد المصفوفة حسب الليفل
                   const isLevel4 = level.id === 'level_4' || level.id === 4;
                   const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
                   const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
-
-                  // التأكد إذا كان العائق قرش بناءً على مسار الصورة
                   const isShark = imgSrc === sharkImg;
 
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      
-                      {isShark ? (
+                     {isShark ? (
                         /* ================= تصميم القرش ================= */
                         <>
-                          {/* طرطشة مياه مدمجة حوالين الزعنفة */}
-                          <ellipse cx="0" cy={0} rx={s * 1.3} ry={s * 0.35} fill="white" opacity="0.4" />
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#81D4FA" opacity="0.6" />
+                          {/* 1. موجات المياه (Ripples) حوالين القرش زي الصخرة بالظبط */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.5} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.6" />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.9} ry={s * 0.45} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
                           
-                          {/* صورة القرش (تم تكبيرها ورفعها قليلاً) */}
-                         {/* صورة العائق الوحيدة */}
-                      <image
-                        href={imgSrc}
-                        // التعديل هنا: لو قرش، هنزق الصورة للشمال (-s * 1.8) عشان الزعنفة تيجي في النص بالظبط فوق الظل
-                        x={isShark ? -s * 1.8 : -s * 1.2}
-                        y={isShark ? -s * 0.2 : -s * 0.8} 
-                        width={s * 2.4}
-                        height={s * 2.4}
-                        preserveAspectRatio="xMidYMid meet"
-                        // تطبيق قناع القص لظهور الزعنفة فقط (للقرش بس)
-                        clipPath={isShark ? "url(#sharkClip)" : undefined} 
-                      />
+                          {/* 2. صورة القرش (تم تكبيرها وتوسيط الزعنفة) */}
+                          <image
+                            href={imgSrc}
+                            // زقينا الصورة لليمين (-s * 0.9) عشان الزعنفة تيجي في نص الدايرة بالظبط
+                            x={-s * 1.8}
+                            y={-s * 1.1}
+                            // كبرنا حجم القرش هنا 
+                            width={s * 3.4}
+                            height={s * 3.4}
+                            preserveAspectRatio="xMidYMid meet"
+                            clipPath="url(#sharkClip)"
+                          />
                         </>
                       ) : (
                         /* ================= تصميم الصخرة ================= */
                         <>
-                          {/* دوائر مياه (Ripples) حوالين الصخرة بدل الظل الأسود */}
+                          {/* دوائر مياه (Ripples) حوالين الصخرة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.5" />
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.8} ry={s * 0.45} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.25" />
                           
                           {/* ظل أزرق غامق جداً تحت الماية عشان يثبت الصخرة */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.1} ry={s * 0.25} fill="#0A2E6C" opacity="0.4" />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#0A2E6C" opacity="0.4" />
 
-                          {/* صورة الصخرة (تم تكبيرها وتظبط مكانها) */}
+                          {/* صورة الصخرة (صغرناها لـ 1.8 بدل 2.6) */}
                           <image
                             href={imgSrc}
-                            x={-s * 1.3}
-                            y={-s * 1.2}
-                            width={s * 2.6}
-                            height={s * 2.6}
+                            x={-s * 0.9}
+                            y={-s * 0.8}
+                            width={s * 1.8}
+                            height={s * 1.8}
                             preserveAspectRatio="xMidYMid meet"
                           />
                         </>
                       )}
-                      
                     </g>
                   );
                 })}
@@ -1612,7 +1611,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                {/* ── LAYER 12 (free): Player boat ── */}
                 {(() => {
                   // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
-                  const s = isNoahLevel ? 13 : 8.5; 
+                  const s = isNoahLevel ? 13 : 9; 
                   const cy = 94;
                   const svgX = riverXAtT(playerX, 1.0);
                   // Tilt based on velocity

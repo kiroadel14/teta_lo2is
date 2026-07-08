@@ -10,6 +10,7 @@ import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getD
 import { auth, db } from "../firebase"; // تأكد إن db موجودة في ملف firebase.ts
 import AuthScreen from "./AuthScreen";
 
+
 type Screen =
   | 'title'
   | 'auth'
@@ -421,24 +422,21 @@ function TitleScreen({
            <div className="absolute top-6 text-4xl opacity-60" style={{ animation: 'moveLeft 22s linear infinite 5s' }}>☁️</div>
         </div>
 
-       {/* River layer */}
-        <div className="relative w-full h-12 bg-blue-500/30 border-t border-blue-400/40 overflow-hidden backdrop-blur-sm">
+      {/* River layer - شيلنا الـ blur عشان الأداء */}
+        <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 overflow-hidden z-0">
            <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
            <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
-           <div className="absolute bottom-1 text-4xl drop-shadow-md" style={{ animation: 'moveLeft 15s linear infinite 2s' }}>🚤</div>
-           {/* التعديل هنا: غيرنا السفينة لرمز الفلك (مركب خشبي) 🛶 */}
-           <div className="absolute bottom-2 text-4xl drop-shadow-md" style={{ animation: 'moveLeft 18s linear infinite 9s' }}>🛶</div>
+           <div className="absolute bottom-1 text-4xl" style={{ animation: 'moveLeft 15s linear infinite 2s' }}>🚤</div>
+           <div className="absolute bottom-4 text-6xl drop-shadow-xl" style={{ right: '-20%', animation: 'moveLeft 18s linear infinite 6s both' }}>🚢</div>      
         </div>
 
-        {/* Road layer */}
-        <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 overflow-hidden shadow-[0_-4px_10px_rgba(0,0,0,0.3)]">
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex gap-4 px-4 opacity-40">
-            {Array.from({ length: 15 }).map((_, i) => (
-              <div key={i} className="flex-1 h-1.5 bg-white rounded-full" />
-            ))}
-          </div>
-          <div className="absolute bottom-1 text-5xl drop-shadow-lg" style={{ animation: 'moveLeft 8s linear infinite' }}>🏎️</div>
-          {/* التعديل هنا: شلنا العربية الخضرا اللي كانت بتمشي بضهرها خالص */}
+        {/* Road layer - رسمنا الخطوط بـ Gradient بدل 15 عنصر عشان نلغي اللجلجة والجليتش */}
+        <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 overflow-hidden shadow-lg z-0">
+          <div 
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 opacity-40" 
+            style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 40px)' }} 
+          />
+          <div className="absolute bottom-1 text-5xl" style={{ animation: 'moveLeft 8s linear infinite' }}>🏎️</div>
         </div>
       </div>
 
