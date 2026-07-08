@@ -113,11 +113,16 @@ const HORIZON_Y = 33;
 const ROAD_BOTTOM = 100;   
 
 // التعديلات الجديدة عشان نعرض الطريق ونظبط المسافات مع الزوم
-const ROAD_HALF_BOTTOM = 35;   
-const ROAD_HALF_HORIZON = 6;  
+// Road width at bottom and at horizon (in viewBox units from VP_X each side)
+const ROAD_HALF_BOTTOM = 44;   // 👈 عرضنا النهر جداً من تحت
+const ROAD_HALF_HORIZON = 8;   // 👈 وعرضناه من عند الأفق
 
-const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 23, 11.5, 0]; 
-const LANE_CENTERS_BOTTOM = [VP_X - 23, VP_X, VP_X + 23]; 
+// Lane divider inner edges (bottom x, mirrored around VP_X)
+// 3 lanes → 4 edges.  Outer edges = road edges.
+const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 29, 14.5, 0]; 
+
+// Lane centres at bottom (used for car placement)
+const LANE_CENTERS_BOTTOM = [VP_X - 29, VP_X, VP_X + 29];
 
 const CREST_Y = HORIZON_Y - 5;
 const CREST_HALF = ROAD_HALF_HORIZON * 0.55;
@@ -1565,15 +1570,18 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                           <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#81D4FA" opacity="0.6" />
                           
                           {/* صورة القرش (تم تكبيرها ورفعها قليلاً) */}
-                          <image
-                            href={imgSrc}
-                            x={-s * 1.2}
-                            y={isShark ? -s * 0.2 : -s * 0.8} 
-                            width={s * 2.4}
-                            height={s * 2.4}
-                            preserveAspectRatio="xMidYMid meet"
-                            clipPath={isShark ? "url(#sharkClip)" : undefined} 
-                          />
+                         {/* صورة العائق الوحيدة */}
+                      <image
+                        href={imgSrc}
+                        // التعديل هنا: لو قرش، هنزق الصورة للشمال (-s * 1.8) عشان الزعنفة تيجي في النص بالظبط فوق الظل
+                        x={isShark ? -s * 1.8 : -s * 1.2}
+                        y={isShark ? -s * 0.2 : -s * 0.8} 
+                        width={s * 2.4}
+                        height={s * 2.4}
+                        preserveAspectRatio="xMidYMid meet"
+                        // تطبيق قناع القص لظهور الزعنفة فقط (للقرش بس)
+                        clipPath={isShark ? "url(#sharkClip)" : undefined} 
+                      />
                         </>
                       ) : (
                         /* ================= تصميم الصخرة ================= */
@@ -1604,7 +1612,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                {/* ── LAYER 12 (free): Player boat ── */}
                 {(() => {
                   // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
-                  const s = isNoahLevel ? 14 : 10; 
+                  const s = isNoahLevel ? 13 : 8.5; 
                   const cy = 94;
                   const svgX = riverXAtT(playerX, 1.0);
                   // Tilt based on velocity

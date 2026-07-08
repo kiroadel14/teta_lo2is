@@ -412,36 +412,50 @@ function TitleScreen({
         />
       ))}
 
-      {/* Road strip at bottom */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-20 flex items-center"
-        style={{ background: 'linear-gradient(180deg, #44403C, #292524)' }}
-      >
-        <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex gap-6 px-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="flex-1 h-1.5 bg-white/70 rounded-full" />
-          ))}
+  {/* ── Animated Bottom Landscape (بر وبحر وجو) ── */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0">
+        
+        {/* Sky layer */}
+        <div className="relative w-full h-16">
+           <div className="absolute top-2 text-4xl drop-shadow-md" style={{ animation: 'moveLeftFlipped 12s linear infinite' }}>✈️</div>
+           <div className="absolute top-6 text-4xl opacity-60" style={{ animation: 'moveLeft 22s linear infinite 5s' }}>☁️</div>
         </div>
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-8 text-5xl" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))' }}>
-          🏎️
+
+       {/* River layer */}
+        <div className="relative w-full h-12 bg-blue-500/30 border-t border-blue-400/40 overflow-hidden backdrop-blur-sm">
+           <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
+           <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
+           <div className="absolute bottom-1 text-4xl drop-shadow-md" style={{ animation: 'moveLeft 15s linear infinite 2s' }}>🚤</div>
+           {/* التعديل هنا: غيرنا السفينة لرمز الفلك (مركب خشبي) 🛶 */}
+           <div className="absolute bottom-2 text-4xl drop-shadow-md" style={{ animation: 'moveLeft 18s linear infinite 9s' }}>🛶</div>
+        </div>
+
+        {/* Road layer */}
+        <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 overflow-hidden shadow-[0_-4px_10px_rgba(0,0,0,0.3)]">
+          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex gap-4 px-4 opacity-40">
+            {Array.from({ length: 15 }).map((_, i) => (
+              <div key={i} className="flex-1 h-1.5 bg-white rounded-full" />
+            ))}
+          </div>
+          <div className="absolute bottom-1 text-5xl drop-shadow-lg" style={{ animation: 'moveLeft 8s linear infinite' }}>🏎️</div>
+          {/* التعديل هنا: شلنا العربية الخضرا اللي كانت بتمشي بضهرها خالص */}
         </div>
       </div>
 
-   <motion.div
+      <motion.div
         initial={{ scale: 0.8, opacity: 0, y: -20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
         className="flex flex-col items-center gap-3 z-10 mb-8"
       >
-        {/* ── التعديل الأول: تكبير اللوجو ── */}
+        {/* اللوجو */}
         <img
           src="logos/logo.png"
           alt="Teta Lo2is Logo"
           className="w-64 h-auto object-contain mb-1 drop-shadow-2xl"
         />
 
-        {/* ── التعديل التاني: تصغير المربع البرتقالي ── */}
-        {/* ── المربع البرتقالي بعد التصغير ── */}
+        {/* المربع البرتقالي بعد التعديل ليتناسب مع المغامرات الشاملة */}
         <div
           className="px-5 py-2 rounded-2xl shadow-xl text-center max-w-[240px]"
           style={{
@@ -454,7 +468,7 @@ function TitleScreen({
             className="text-yellow-200 mb-0.5"
             style={{ fontSize: 'clamp(0.55rem, 1.2vw, 0.7rem)', fontWeight: 700, letterSpacing: '0.05em' }}
           >
-            لعبة السيارات التعليمية
+            لعبة المغامرات التعليمية
           </p>
 
           <h1
@@ -469,7 +483,7 @@ function TitleScreen({
             تيتا لوئيس
           </h1>
           <p className="text-orange-200 mt-0.5" style={{ fontSize: 'clamp(0.5rem, 1vw, 0.65rem)', fontWeight: 600 }}>
-            🏁 تعالى نلعب مع تيتا! 🏁
+            ✨ تعالى نلعب مع تيتا! ✨
           </p>
         </div>
         {/* ── الأزرار زي ما هي ── */}
@@ -527,6 +541,14 @@ function TitleScreen({
         @keyframes twinkle {
           0%, 100% { opacity: 0.3; transform: scale(1); }
           50% { opacity: 0.9; transform: scale(1.5); }
+        }
+        @keyframes moveLeft {
+          0% { right: -20%; }
+          100% { right: 120%; }
+        }
+        @keyframes moveLeftFlipped {
+          0% { right: -20%; transform: scaleX(-1); }
+          100% { right: 120%; transform: scaleX(-1); }
         }
       `}</style>
     </div>
