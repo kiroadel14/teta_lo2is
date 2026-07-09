@@ -10,7 +10,6 @@ import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getD
 import { auth, db } from "../firebase"; // تأكد إن db موجودة في ملف firebase.ts
 import AuthScreen from "./AuthScreen";
 
-
 type Screen =
   | 'title'
   | 'auth'
@@ -125,27 +124,22 @@ export default function App() {
     }
   };
 
-  // 3. حفظ التقدم في Firestore لما اللاعب يكسب
   // 3. حفظ التقدم في Firestore بعد نهاية السباق (في كل الأحوال)
   const handleGameOver = async (result: GameResult) => {
     setGameResult(result);
 
-    // 1. تحديث النجوم (بناخد الأعلى دايماً سواء كسب أو خسر)
     const currentStars = levelStars[selectedLevelId] ?? 0;
     const newStars = Math.max(currentStars, result.stars);
     const updatedStars = { ...levelStars, [selectedLevelId]: newStars };
     setLevelStars(updatedStars);
 
-    // 2. تحديث السكور (بناخد الأعلى دايماً)
     const currentScore = levelScores[selectedLevelId] ?? 0;
     const newScore = Math.max(currentScore, result.score);
     const updatedScores = { ...levelScores, [selectedLevelId]: newScore };
     setLevelScores(updatedScores);
 
-    // 3. حساب إجمالي السكور لكل المستويات
     const totalScore = Object.values(updatedScores).reduce((sum, s) => sum + s, 0);
 
-    // 4. فتح الليفل القادم (فقط في حالة الفوز)
     let updatedUnlockedIds = { ...unlockedLevelIds };
     let nextLevelIdToSave = selectedLevelId;
 
@@ -160,7 +154,6 @@ export default function App() {
     }
     setUnlockedLevelIds(updatedUnlockedIds);
 
-    // 5. الرفع على الداتابيز لو هو مش زائر (في كل الأحوال)
     if (user) {
       const docRef = doc(db, "users", user.uid);
       try {
@@ -168,12 +161,11 @@ export default function App() {
           stars: updatedStars,
           scores: updatedScores,
           totalScore: totalScore,
-          displayName: user.displayName || "", // تأكد إن السطر ده موجود هنا
+          displayName: user.displayName || "",
           unlockedLevels: Object.keys(updatedUnlockedIds).filter((id) => updatedUnlockedIds[id]),
           currentLevel: nextLevelIdToSave
         });
       } catch (error) {
-        // لو الملف مش موجود أصلاً (حالة نادرة) استخدم setDoc
         await setDoc(docRef, {
           displayName: user.displayName || "",
           totalScore: totalScore,
@@ -217,7 +209,7 @@ export default function App() {
             <TitleScreen
               onStart={() => setScreen('levelSelect')}
               onLogin={() => setScreen('auth')}
-              onShowLeaderboard={fetchLeaderboard} // تمرير دالة الليدربورد
+              onShowLeaderboard={fetchLeaderboard}
               user={user}
             />
           </motion.div>
@@ -380,7 +372,6 @@ function TitleScreen({
         fontFamily: "'Cairo', sans-serif",
       }}
     >
-      {/* زرار المتصدرين المربع في أعلى اليمين */}
       <motion.button
         whileHover={{ scale: 1.1, rotate: 5 }}
         whileTap={{ scale: 0.9 }}
@@ -396,7 +387,6 @@ function TitleScreen({
         <span className="text-3xl" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>🏆</span>
       </motion.button>
 
-      {/* Stars background */}
       {Array.from({ length: 20 }).map((_, i) => (
         <div
           key={i}
@@ -413,30 +403,35 @@ function TitleScreen({
         />
       ))}
 
-  {/* ── Animated Bottom Landscape (بر وبحر وجو) ── */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0">
+      {/* ── Animated Bottom Landscape (بر وبحر وجو) ── */}
+      {/* ضفنا overflow-hidden هنا للطبقة الكبيرة اللي ماسكاهم كلهم عشان المراكب متطلعش برا الشاشة */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0 overflow-hidden">
         
         {/* Sky layer */}
         <div className="relative w-full h-16">
-           <div className="absolute top-2 text-4xl drop-shadow-md" style={{ animation: 'moveLeftFlipped 12s linear infinite' }}>✈️</div>
-           <div className="absolute top-6 text-4xl opacity-60" style={{ animation: 'moveLeft 22s linear infinite 5s' }}>☁️</div>
+           {/* ضفنا right: '-20%' وكلمة both */}
+           <div className="absolute top-2 text-4xl drop-shadow-md" style={{ right: '-20%', animation: 'moveLeftFlipped 12s linear infinite both' }}>✈️</div>
+           <div className="absolute top-6 text-4xl opacity-60" style={{ right: '-20%', animation: 'moveLeft 22s linear infinite 5s both' }}>☁️</div>
         </div>
 
-      {/* River layer - شيلنا الـ blur عشان الأداء */}
-        <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 overflow-hidden z-0">
+      {/* River layer - شيلنا overflow-hidden من هنا عشان الفلك يبان كامل من فوق */}
+        <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 z-0">
            <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
            <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
-           <div className="absolute bottom-1 text-4xl" style={{ animation: 'moveLeft 15s linear infinite 2s' }}>🚤</div>
-           <div className="absolute bottom-4 text-6xl drop-shadow-xl" style={{ right: '-20%', animation: 'moveLeft 18s linear infinite 6s both' }}>🚢</div>      
+           {/* ضفنا right: '-20%' وكلمة both */}
+           <div className="absolute bottom-1 text-4xl drop-shadow-md" style={{ right: '-20%', animation: 'moveLeft 15s linear infinite 2s both' }}>🚤</div>
+           {/* رفعنا الفلك (bottom-1 بدل bottom-4) وغيرنا حجمه عشان يبان مظبوط وغيرناه للمركب الخشبي البني 🛶 */}
+      <div className="absolute bottom-1 text-4xl drop-shadow-2xl" style={{ right: '-20%', animation: 'moveLeft 14s linear infinite both' }}>🚢</div>
         </div>
 
-        {/* Road layer - رسمنا الخطوط بـ Gradient بدل 15 عنصر عشان نلغي اللجلجة والجليتش */}
-        <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 overflow-hidden shadow-lg z-0">
+        {/* Road layer */}
+        <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 shadow-lg z-0">
           <div 
             className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 opacity-40" 
             style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 40px)' }} 
           />
-          <div className="absolute bottom-1 text-5xl" style={{ animation: 'moveLeft 8s linear infinite' }}>🏎️</div>
+          {/* ضفنا right: '-20%' وكلمة both */}
+          <div className="absolute bottom-1 text-5xl drop-shadow-lg" style={{ right: '-20%', animation: 'moveLeft 8s linear infinite both' }}>🏎️</div>
         </div>
       </div>
 
@@ -446,14 +441,12 @@ function TitleScreen({
         transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
         className="flex flex-col items-center gap-3 z-10 mb-8"
       >
-        {/* اللوجو */}
         <img
           src="logos/logo.png"
           alt="Teta Lo2is Logo"
           className="w-64 h-auto object-contain mb-1 drop-shadow-2xl"
         />
 
-        {/* المربع البرتقالي بعد التعديل ليتناسب مع المغامرات الشاملة */}
         <div
           className="px-5 py-2 rounded-2xl shadow-xl text-center max-w-[240px]"
           style={{
@@ -484,7 +477,7 @@ function TitleScreen({
             ✨ تعالى نلعب مع تيتا! ✨
           </p>
         </div>
-        {/* ── الأزرار زي ما هي ── */}
+
         <motion.button
           whileHover={{ scale: 1.07 }}
           whileTap={{ scale: 0.95 }}

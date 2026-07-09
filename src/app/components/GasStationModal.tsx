@@ -7,6 +7,7 @@ import wrongSound from './wrong.mp3';
 interface GasStationModalProps {
   questions: LevelQuestion[];
   onComplete: (correctCount: number) => void;
+  levelId: string; // 👈 ضفنا السطر ده
 }
 
 type AnswerState = 'idle' | 'correct' | 'incorrect';
@@ -49,7 +50,7 @@ function AudioWaveIcon({ active }: { active: boolean }) {
   );
 }
 
-export function GasStationModal({ questions, onComplete }: GasStationModalProps) {
+export function GasStationModal({ questions, onComplete, levelId }: GasStationModalProps) {
   const [currentQ, setCurrentQ] = useState(0);
   const [answerState, setAnswerState] = useState<AnswerState>('idle');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -169,7 +170,17 @@ export function GasStationModal({ questions, onComplete }: GasStationModalProps)
             {countdown !== null ? (
               <motion.div key="countdown" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center py-8 gap-3">
-                <div className="text-4xl">🚗💨</div>
+             <div className="text-5xl mb-3 flex items-center justify-center gap-2" style={{ animation: 'bounce 1s infinite' }}>
+                  {['level_3', 'level_6'].includes(levelId) ? (
+                    <>☁️ ✈️</> /* ليفل 3 و 6: طيارات */
+                  ) : levelId === 'level_4' ? (
+                    <>🌊 🚢</> /* ليفل 4: فلك */
+                  ) : levelId === 'level_1' ? (
+                    <>🌊 🚤</> /* ليفل 1: مركب */
+                  ) : (
+                    <>💨 🏎️</> /* ليفل 2 و 5: عربيات */
+                  )}
+                </div>
                 <p style={{ fontSize: 'clamp(0.85rem, 2vw, 1.05rem)', fontWeight: 700, color: '#F97316' }}>هنرجع للسباق...</p>
                 <div className="w-14 h-14 rounded-full flex items-center justify-center text-white shadow-xl"
                   style={{ background: 'linear-gradient(135deg, #F97316, #EF4444)', fontSize: '1.8rem', fontWeight: 900 }}>
