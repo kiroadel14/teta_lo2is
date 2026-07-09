@@ -1571,7 +1571,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.6" />
 
 {/* صغرنا الـ rx لـ 1.4 والـ ry لـ 0.35 */}
-<ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
+<ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.30} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
                           
                           {/* 2. صورة القرش (تم تكبيرها وتوسيط الزعنفة) */}
                           <image
@@ -1580,8 +1580,8 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                             x={-s * 1.6}
                             y={-s * 1.7}
                             // كبرنا حجم القرش هنا 
-                            width={s * 3}
-                            height={s * 3}
+                            width={s * 2.9} 
+                            height={s * 2.9}
                             preserveAspectRatio="xMidYMid meet"
                             clipPath="url(#sharkClip)"
                           />
@@ -1592,7 +1592,6 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                           {/* دوائر مياه (Ripples) حوالين الصخرة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.5" />
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.25" />
-                          
                           {/* ظل أزرق غامق جداً تحت الماية عشان يثبت الصخرة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#0A2E6C" opacity="0.4" />
 
@@ -1614,7 +1613,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                {/* ── LAYER 12 (free): Player boat ── */}
                 {(() => {
                   // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
-                  const s = isNoahLevel ? 14 : 9.5; 
+                  const s = isNoahLevel ? 14 : 10; 
                   const cy = 94;
                   const svgX = riverXAtT(playerX, 1.0);
                   // Tilt based on velocity
