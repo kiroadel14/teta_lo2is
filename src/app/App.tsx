@@ -403,32 +403,47 @@ function TitleScreen({
         />
       ))}
 
-      {/* ── Animated Bottom Landscape (بر وبحر وجو) ── */}
-      {/* ضفنا overflow-hidden هنا للطبقة الكبيرة اللي ماسكاهم كلهم عشان المراكب متطلعش برا الشاشة */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0 overflow-hidden">
-        
-        {/* Sky layer */}
-        <div className="relative w-full h-16">
-           {/* ضفنا right: '-20%' وكلمة both */}
-           <div className="absolute top-2 text-4xl drop-shadow-md" style={{ right: '-20%', animation: 'moveLeftFlipped 12s linear infinite both' }}>✈️</div>
-           <div className="absolute top-6 text-4xl opacity-60" style={{ right: '-20%', animation: 'moveLeft 22s linear infinite 5s both' }}>☁️</div>
+      {/* Sky layer */}
+      <div className="absolute top-0 inset-x-0 bottom-40 z-0 pointer-events-none overflow-hidden">
+        {/* السحابة */}
+        <div
+          className="absolute text-5xl opacity-60"
+          style={{ top: '15%', left: '10%', animation: 'moveCloud 40s linear infinite alternate' }}>
+          ☁️
+        </div>
+        <div
+          className="absolute text-4xl opacity-50"
+          style={{ top: '25%', left: '60%', animation: 'moveCloud 50s linear infinite alternate-reverse' }}>
+          ☁️
         </div>
 
-      {/* River layer - شيلنا overflow-hidden من هنا عشان الفلك يبان كامل من فوق */}
+        {/* الطيارة */}
+        <div
+          className="absolute text-5xl drop-shadow-md"
+          style={{ animation: 'flyDiagonalLeft 15s linear infinite both' }}>
+          ✈️
+        </div>
+      </div>
+
+      {/* ── Animated Bottom Landscape (بر وبحر) ── */}
+      {/* ضفنا overflow-hidden هنا للطبقة الكبيرة اللي ماسكاهم كلهم عشان المراكب متطلعش برا الشاشة */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0 overflow-hidden">
+
+        {/* River layer - شيلنا overflow-hidden من هنا عشان الفلك يبان كامل من فوق */}
         <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 z-0">
-           <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
-           <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
-           {/* ضفنا right: '-20%' وكلمة both */}
-           <div className="absolute bottom-1 text-4xl drop-shadow-md" style={{ right: '-20%', animation: 'moveLeft 15s linear infinite 2s both' }}>🚤</div>
-           {/* رفعنا الفلك (bottom-1 بدل bottom-4) وغيرنا حجمه عشان يبان مظبوط وغيرناه للمركب الخشبي البني 🛶 */}
-      <div className="absolute bottom-1 text-4xl drop-shadow-2xl" style={{ right: '-20%', animation: 'moveLeft 14s linear infinite both' }}>🚢</div>
+          <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
+          <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
+          {/* ضفنا right: '-20%' وكلمة both */}
+          <div className="absolute bottom-1 text-4xl drop-shadow-md" style={{ right: '-20%', animation: 'moveLeft 15s linear infinite 2s both' }}>🚤</div>
+          {/* رفعنا الفلك (bottom-1 بدل bottom-4) وغيرنا حجمه عشان يبان مظبوط وغيرناه للمركب الخشبي البني 🛶 */}
+          <div className="absolute bottom-1 text-4xl drop-shadow-2xl" style={{ right: '-20%', animation: 'moveLeft 14s linear infinite both' }}>🚢</div>
         </div>
 
         {/* Road layer */}
         <div className="relative w-full h-12 bg-stone-800 border-t border-stone-500 shadow-lg z-0">
-          <div 
-            className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 opacity-40" 
-            style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 40px)' }} 
+          <div
+            className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 opacity-40"
+            style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 40px)' }}
           />
           {/* ضفنا right: '-20%' وكلمة both */}
           <div className="absolute bottom-1 text-5xl drop-shadow-lg" style={{ right: '-20%', animation: 'moveLeft 8s linear infinite both' }}>🏎️</div>
@@ -540,6 +555,10 @@ function TitleScreen({
         @keyframes moveLeftFlipped {
           0% { right: -20%; transform: scaleX(-1); }
           100% { right: 120%; transform: scaleX(-1); }
+        }
+        @keyframes moveCloud {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(30px); }
         }
       `}</style>
     </div>

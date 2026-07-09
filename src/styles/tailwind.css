@@ -1,4 +1,30 @@
-@import 'tailwindcss' source(none);
-@source '../**/*.{js,ts,jsx,tsx}';
+@import "tailwindcss";
+@source "../**/*.{js,ts,jsx,tsx}";
 
 @import 'tw-animate-css';
+
+/* أنيميشن السحابة (حركة أفقية عادية) */
+@keyframes moveLeft {
+    0% {
+        right: -20%;
+    }
+
+    100% {
+        right: 120%;
+    }
+}
+
+/* أنيميشن الطيارة (حركة مايلة لفوق وشمال) */
+@keyframes flyDiagonalLeft {
+    0% {
+        right: -20vw;
+        top: 60vh;
+        transform: scaleX(-1);
+    }
+
+    100% {
+        right: 120vw;
+        top: 10vh;
+        transform: scaleX(-1);
+    }
+}
