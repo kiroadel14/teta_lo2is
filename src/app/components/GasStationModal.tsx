@@ -68,6 +68,13 @@ export function GasStationModal({ questions, onComplete, levelId }: GasStationMo
   useEffect(() => {
     correctAudioRef.current = new Audio(fuelBonusSound);
     wrongAudioRef.current = new Audio(wrongSound);
+
+    return () => {
+      correctAudioRef.current?.pause();
+      correctAudioRef.current = null;
+      wrongAudioRef.current?.pause();
+      wrongAudioRef.current = null;
+    };
   }, []);
   // Reset audio on question change
   useEffect(() => {
@@ -85,11 +92,12 @@ export function GasStationModal({ questions, onComplete, levelId }: GasStationMo
       return;
     }
     try {
-      const audio = new Audio(question.audioUrl);
-      audioRef.current = audio;
-      audio.onended = () => setAudioPlaying(false);
-      audio.onerror = () => setAudioPlaying(false); // fail silently if file missing
-      audio.play().catch(() => setAudioPlaying(false));
+      if (!audioRef.current) {
+        audioRef.current = new Audio(question.audioUrl);
+        audioRef.current.onended = () => setAudioPlaying(false);
+        audioRef.current.onerror = () => setAudioPlaying(false); // fail silently if file missing
+      }
+      audioRef.current.play().catch(() => setAudioPlaying(false));
       setAudioPlaying(true);
     } catch {
       // fail silently

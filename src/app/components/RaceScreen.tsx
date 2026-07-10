@@ -18,7 +18,7 @@ import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
 import sharkImg from './shark.png';
-import rockImg from './rock.png'; 
+import rockImg from './rock.png';
 import orbitImg from './orbit.png';
 // المصفوفة العادية لليفل 2
 const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
@@ -108,9 +108,9 @@ function toArabicNumerals(n: number): string {
 // ─────────────────────────────────────────────────────────────
 
 // ── ROAD GEOMETRY  (100×100 viewBox units) ──
-const VP_X = 50;           
-const HORIZON_Y = 33;     
-const ROAD_BOTTOM = 100;   
+const VP_X = 50;
+const HORIZON_Y = 33;
+const ROAD_BOTTOM = 100;
 
 // التعديلات الجديدة عشان نعرض الطريق ونظبط المسافات مع الزوم
 // Road width at bottom and at horizon (in viewBox units from VP_X each side)
@@ -119,7 +119,7 @@ const ROAD_HALF_HORIZON = 8;   // 👈 وعرضناه من عند الأفق
 
 // Lane divider inner edges (bottom x, mirrored around VP_X)
 // 3 lanes → 4 edges.  Outer edges = road edges.
-const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 29, 14.5, 0]; 
+const LANE_OFFSETS_BOTTOM = [ROAD_HALF_BOTTOM, 29, 14.5, 0];
 
 // Lane centres at bottom (used for car placement)
 const LANE_CENTERS_BOTTOM = [VP_X - 29, VP_X, VP_X + 29];
@@ -242,22 +242,22 @@ function shorelinePath(side: 'L' | 'R', inset: number): string {
 
   // 1. جلب إحداثيات النقطة اللي تحت خالص (أسفل الشاشة)
   const bottomT = 0; // بافتراض إن 0 هي بداية الشاشة من تحت
-  const bottomX = side === 'L' 
-    ? roadLeftX(bottomT) + inset 
+  const bottomX = side === 'L'
+    ? roadLeftX(bottomT) + inset
     : roadRightX(bottomT) - inset;
   const bottomY = yAtT(bottomT);
 
   // 2. جلب إحداثيات النقطة اللي فوق خالص (عند خط الأفق)
   const topT = 1; // بافتراض إن 1 هي أبعد نقطة في الأفق
-  const topX = side === 'L' 
-    ? roadLeftX(topT) + inset 
+  const topX = side === 'L'
+    ? roadLeftX(topT) + inset
     : roadRightX(topT) - inset;
   const topY = yAtT(topT);
 
   return samples.map((t, i) => {
     // نجيب ارتفاع الـ Y عند النقطة الحالية
     const y = yAtT(t);
-    
+
     // 3. (السر هنا) معادلة الخط المستقيم: 
     // بنحسب نسبة الـ y الحالية بالنسبة للمسافة الكلية، وبناءً عليها بنستنتج الـ x 
     // عشان نضمن إن كل النقاط تقع على خط مستقيم واحد بدون أي كسرات
@@ -266,6 +266,21 @@ function shorelinePath(side: 'L' | 'R', inset: number): string {
 
     return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }).join(' ');
+}
+
+interface SeamlessAudio {
+  play: () => Promise<void>;
+  pause: () => void;
+  stop: () => void;
+  paused: boolean;
+}
+
+interface SfxPlayer {
+  playCrash: () => void;
+  playWinner: () => void;
+  playGameOver: () => void;
+  playCoin: () => void;
+  setMuted: (muted: boolean) => void;
 }
 
 export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
@@ -287,6 +302,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const [paused, setPaused] = useState(false);
   const [showGasStation, setShowGasStation] = useState(false);
   const [gasStationVisited, setGasStationVisited] = useState(false);
+  const [showGasStationWarning, setShowGasStationWarning] = useState(false);
   const [showCollision, setShowCollision] = useState(false);
   const [fuelPenaltyFeedbacks, setFuelPenaltyFeedbacks] = useState<FuelPenaltyFeedback[]>([]);
   const [laneIndicator, setLaneIndicator] = useState<'left' | 'right' | null>(null);
@@ -304,6 +320,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const pausedRef = useRef(false);
   const gasStationVisitedRef = useRef(false);
   const showGasStationRef = useRef(false);
+  const showGasStationWarningRef = useRef(false);
   const obstacleIdCounter = useRef(0);
   const spawnFrameCounter = useRef(0);
   const coinIdCounter = useRef(0);
@@ -331,29 +348,133 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const FUEL_DRAIN_PER_SECOND = 100 / (TARGET_DURATION_SECONDS * 1.15);
 
   // ── مراجع الأصوات ──
-  const mainLoopRef = useRef<HTMLAudioElement | null>(null);
-  const crashRef = useRef<HTMLAudioElement | null>(null);
-  const fuelBonusRef = useRef<HTMLAudioElement | null>(null);
-  const winnerRef = useRef<HTMLAudioElement | null>(null);
-  const gameOverRef = useRef<HTMLAudioElement | null>(null);
-  const coinRef = useRef<HTMLAudioElement | null>(null);
+  const mainLoopRef = useRef<SeamlessAudio | null>(null);
+  const sfxPlayerRef = useRef<SfxPlayer | null>(null);
 
   // ── تشغيل وتجهيز الأصوات ──
   useEffect(() => {
-    mainLoopRef.current = new Audio(mainLoopSound);
-    mainLoopRef.current.loop = true; // عشان يفضل شغال طول السباق
-    mainLoopRef.current.volume = 0.3; // نوطي الصوت شوية عشان الإزعاج
+    let isCleanedUp = false;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const audioCtx = new AudioContextClass();
 
-    crashRef.current = new Audio(crashSound);
-    fuelBonusRef.current = new Audio(fuelBonusSound);
-    winnerRef.current = new Audio(winnerGameSound);
-    gameOverRef.current = new Audio(gameOverSound);
-    coinRef.current = new Audio(coinSound);
+    // Main Loop
+    const mainGainNode = audioCtx.createGain();
+    mainGainNode.gain.value = 0.3; // نوطي الصوت شوية عشان الإزعاج
+    mainGainNode.connect(audioCtx.destination);
+
+    // SFX
+    const sfxGainNode = audioCtx.createGain();
+    sfxGainNode.gain.value = 1.0;
+    sfxGainNode.connect(audioCtx.destination);
+
+    let mainSourceNode: AudioBufferSourceNode | null = null;
+    let mainAudioBuffer: AudioBuffer | null = null;
+    let mainIsPlaying = false;
+
+    const seamlessLoop: SeamlessAudio = {
+      play: async () => {
+        mainIsPlaying = true;
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+        if (!mainSourceNode && mainAudioBuffer) {
+          mainSourceNode = audioCtx.createBufferSource();
+          mainSourceNode.buffer = mainAudioBuffer;
+          mainSourceNode.loop = true;
+          mainSourceNode.connect(mainGainNode);
+          mainSourceNode.start();
+        }
+      },
+      pause: () => {
+        mainIsPlaying = false;
+        if (audioCtx.state === 'running') {
+          audioCtx.suspend();
+        }
+      },
+      get paused() {
+        return !mainIsPlaying;
+      },
+      stop: () => {
+        mainIsPlaying = false;
+        if (mainSourceNode) {
+          try { mainSourceNode.stop(); } catch (e) { }
+          mainSourceNode.disconnect();
+          mainSourceNode = null;
+        }
+        audioCtx.close().catch(() => { });
+      }
+    };
+
+    mainLoopRef.current = seamlessLoop;
+
+    const loadBuffer = async (url: string) => {
+      try {
+        const response = await fetch(url);
+        const arrayBuffer = await response.arrayBuffer();
+        return await audioCtx.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        return null;
+      }
+    };
+
+    loadBuffer(mainLoopSound).then(decoded => {
+      if (isCleanedUp) return;
+      mainAudioBuffer = decoded;
+      if (mainIsPlaying && !mainSourceNode) {
+        mainSourceNode = audioCtx.createBufferSource();
+        mainSourceNode.buffer = mainAudioBuffer;
+        mainSourceNode.loop = true;
+        mainSourceNode.connect(mainGainNode);
+        mainSourceNode.start();
+      }
+    });
+
+    const sfxBuffers: Record<string, AudioBuffer | null> = {
+      crash: null,
+      winner: null,
+      gameOver: null,
+      coin: null
+    };
+
+    loadBuffer(crashSound).then(b => { if (!isCleanedUp) sfxBuffers.crash = b; });
+    loadBuffer(winnerGameSound).then(b => { if (!isCleanedUp) sfxBuffers.winner = b; });
+    loadBuffer(gameOverSound).then(b => { if (!isCleanedUp) sfxBuffers.gameOver = b; });
+    loadBuffer(coinSound).then(b => { if (!isCleanedUp) sfxBuffers.coin = b; });
+
+    const playSfx = (bufferName: keyof typeof sfxBuffers, volume = 1.0) => {
+      const buffer = sfxBuffers[bufferName];
+      if (!buffer || isCleanedUp) return;
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      if (volume !== 1.0) {
+        const volumeGain = audioCtx.createGain();
+        volumeGain.gain.value = volume;
+        volumeGain.connect(sfxGainNode);
+        source.connect(volumeGain);
+      } else {
+        source.connect(sfxGainNode);
+      }
+      source.start();
+    };
+
+    sfxPlayerRef.current = {
+      playCrash: () => playSfx('crash'),
+      playWinner: () => playSfx('winner'),
+      playGameOver: () => playSfx('gameOver'),
+      playCoin: () => playSfx('coin', 0.5),
+      setMuted: (muted: boolean) => {
+        sfxGainNode.gain.value = muted ? 0 : 1.0;
+      }
+    };
 
     mainLoopRef.current.play().catch(() => { });
 
     return () => {
-      mainLoopRef.current?.pause(); // نقفل الصوت لو طلعنا من السباق
+      isCleanedUp = true;
+      mainLoopRef.current?.stop();
     };
   }, []);
 
@@ -361,8 +482,10 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   useEffect(() => {
     if (paused || showGasStation) {
       mainLoopRef.current?.pause();
+      sfxPlayerRef.current?.setMuted(true);
     } else {
       mainLoopRef.current?.play().catch(() => { });
+      sfxPlayerRef.current?.setMuted(false);
     }
   }, [paused, showGasStation]);
   // Sync refs with state
@@ -441,8 +564,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   // Lane mode touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     // 👇 ده السطر اللي هيجبر الصوت يشتغل أول ما يلمس الشاشة لو كان معلق
-    if (mainLoopRef.current && mainLoopRef.current.paused && !paused) {
-      mainLoopRef.current.play().catch(() => {});
+    if (mainLoopRef.current && mainLoopRef.current.paused && !paused && !showGasStation) {
+      mainLoopRef.current.play().catch(() => { });
     }
 
     touchStartX.current = e.touches[0].clientX;
@@ -500,9 +623,29 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         scoreRef.current = Math.floor(distanceRef.current);
         fuelRef.current = Math.max(0, fuelRef.current - (FUEL_DRAIN_PER_SECOND * deltaSeconds));
 
+        // ── Gas station warning (5 seconds before trigger) ─────────────────
+        if (!gasStationVisitedRef.current && !showGasStationRef.current) {
+          const currentDistanceProgress = distanceRef.current / level.survivalTargetDistance;
+          const timeToDistance = Math.max(0, (0.45 - currentDistanceProgress) * TARGET_DURATION_SECONDS);
+          const timeToFuel = Math.max(0, (fuelRef.current - 50) / FUEL_DRAIN_PER_SECOND);
+          const estimatedTime = Math.max(timeToDistance, timeToFuel);
+
+          const shouldWarn = estimatedTime <= 5 && estimatedTime > 0;
+          if (shouldWarn && !showGasStationWarningRef.current) {
+            showGasStationWarningRef.current = true;
+            setShowGasStationWarning(true);
+          } else if (!shouldWarn && showGasStationWarningRef.current) {
+            showGasStationWarningRef.current = false;
+            setShowGasStationWarning(false);
+          }
+        } else if (showGasStationWarningRef.current) {
+          showGasStationWarningRef.current = false;
+          setShowGasStationWarning(false);
+        }
+
         // Road/river scroll animation
-// Road/river scroll animation
-setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000);
+        // Road/river scroll animation
+        setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000);
         // 👈 السطر ده اللي كان ناقص عشان العداد يشتغل!
         spawnFrameCounter.current += deltaSeconds * 60;
         coinSpawnFrameCounter.current += deltaSeconds * 60;
@@ -517,11 +660,11 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
 
         // ── FREE MODE: steering physics ────────────────────────────────────
         if (isFreeMode) {
-         // Update steer flags from live touch position
+          // Update steer flags from live touch position
           if (touchXRef.current !== null) {
             const screenMid = window.innerWidth / 2;
             // التعديل هنا: اللمس يمين يروح يمين، واللمس شمال يروح شمال
-            steerLeftRef.current = touchXRef.current < screenMid; 
+            steerLeftRef.current = touchXRef.current < screenMid;
             steerRightRef.current = touchXRef.current > screenMid;
           }
 
@@ -555,10 +698,10 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
         if (spawnFrameCounter.current >= level.spawnRate) {
           spawnFrameCounter.current -= level.spawnRate;
 
-// بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
-const isLevel5 = level.id === 'level_5' || level.id === '5';
-const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
-const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
+          // بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
+          const isLevel5 = level.id === 'level_5' || level.id === '5';
+          const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+          const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           let lane: number;
           let x: number;
           let gapY: number | undefined;
@@ -648,14 +791,28 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               )
             );
             if (safeLanes.length > 0) {
-              const lane = safeLanes[Math.floor(Math.random() * safeLanes.length)];
-              const coinCount = Math.random() < 0.3 ? 3 : 1;
-              for (let i = 0; i < coinCount; i += 1) {
+              const spawnTriple = Math.random() < 0.3 && safeLanes.length >= 3;
+              if (spawnTriple) {
+                // Spread 3 coins across all 3 safe lanes at the same depth.
+                // Shuffle safeLanes so the order is random.
+                const shuffled = [...safeLanes].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < 3; i += 1) {
+                  const laneForCoin = shuffled[i];
+                  newCoins.push({
+                    id: coinIdCounter.current++,
+                    lane: laneForCoin,
+                    x: (LANE_CENTERS_BOTTOM[laneForCoin] - (VP_X - ROAD_HALF_BOTTOM)) / (ROAD_HALF_BOTTOM * 2),
+                    t: 0.05,
+                  });
+                }
+              } else {
+                // Single coin in one random safe lane.
+                const lane = safeLanes[Math.floor(Math.random() * safeLanes.length)];
                 newCoins.push({
                   id: coinIdCounter.current++,
                   lane,
                   x: (LANE_CENTERS_BOTTOM[lane] - (VP_X - ROAD_HALF_BOTTOM)) / (ROAD_HALF_BOTTOM * 2),
-                  t: 0.05 + i * 0.07,
+                  t: 0.05,
                 });
               }
             }
@@ -687,8 +844,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           coinsCollectedRef.current += collectedThisFrame;
           setCoinsCollected(coinsCollectedRef.current);
           for (let i = 0; i < collectedThisFrame; i += 1) {
-            const pickupSound = coinRef.current?.cloneNode() as HTMLAudioElement | undefined;
-            pickupSound?.play().catch(() => { });
+            sfxPlayerRef.current?.playCoin();
           }
         }
 
@@ -723,14 +879,16 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 && obs.t > 0.88 && obs.t < 1.05
             );
           } else {
+            // t > 0.72: geometrically, the enemy's near-edge image bottom (y = 33 + 71.8*t)
+            // reaches the player's front (y ≈ 85) when t ≈ 0.727 — fire before deep overlap.
             hitting = obstaclesRef.current.find(
-              (obs) => obs.lane === playerLaneRef.current && obs.t > 0.88 && obs.t < 1.05
+              (obs) => obs.lane === playerLaneRef.current && obs.t > 0.72 && obs.t < 1.05
             );
           }
 
           if (hitting) {
             // 👇 السطر الجديد اللي ضفناه عشان يشغل صوت الخبطة
-            crashRef.current?.play().catch(() => { });
+            sfxPlayerRef.current?.playCrash();
             collisionCooldownRef.current = 90;
             fuelRef.current = Math.max(0, fuelRef.current - 5);
             const feedbackId = fuelPenaltyFeedbackIdRef.current++;
@@ -757,7 +915,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         if (fuelRef.current <= 0 && !gameOverFiredRef.current) {
           gameOverFiredRef.current = true;
           // 👇 ده السطر بتاع صوت الخسارة
-          gameOverRef.current?.play().catch(() => { });
+          sfxPlayerRef.current?.playGameOver();
           const distanceScore = scoreRef.current;
           const stars = distanceScore >= level.survivalTargetDistance ? 3 : distanceScore >= level.survivalTargetDistance * 0.6 ? 2 : distanceScore >= level.survivalTargetDistance * 0.3 ? 1 : 0;
           const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);
@@ -769,7 +927,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         if (distanceRef.current >= level.survivalTargetDistance && fuelRef.current > 0 && !gameOverFiredRef.current) {
           gameOverFiredRef.current = true;
           // 👇 السطر ده هيشغل صوت الفوز والاحتفال
-          winnerRef.current?.play().catch(() => { });
+          sfxPlayerRef.current?.playWinner();
           const distanceScore = scoreRef.current;
           const stars = fuelRef.current >= 60 ? 3 : fuelRef.current >= 30 ? 2 : 1;
           const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);
@@ -826,7 +984,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
   const playerBoatSrc = level.id === 'level_4' ? PLAYER_BOAT_L4 : PLAYER_BOAT_L1;
   const isNoahLevel = level.id === 'level_4';
 
- return (
+  return (
     <div
       dir="rtl"
       className="relative w-full h-full overflow-hidden select-none bg-[#1A5BB5]"
@@ -835,11 +993,11 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
       onTouchMove={isFreeMode ? handleTouchMove : undefined}
       onTouchEnd={handleTouchEnd}
     >
-     {/* ── GAME SCENE (SVG) ── */}
+      {/* ── GAME SCENE (SVG) ── */}
       <svg
         // التعديل هنا: خلينا العرض 70 بدل 100 عشان اللعبة تعرض على اللاب فتتظبط على التليفون
         viewBox={isFlappyMode ? "0 0 100 100" : "15 0 70 100"}
-        preserveAspectRatio="none" 
+        preserveAspectRatio="none"
         className="absolute inset-0 w-full h-full"
         style={{ display: 'block' }}
       >
@@ -992,7 +1150,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           </clipPath>
           {/* 👇 الكود اللي كان ناقص ضفناه هنا بـ 0.65 جاهز 👇 */}
           <clipPath id="sharkClip" clipPathUnits="objectBoundingBox">
-            <rect x="0" y="0" width="1" height="0.65" /> 
+            <rect x="0" y="0" width="1" height="0.65" />
           </clipPath>
         </defs>
 
@@ -1102,24 +1260,24 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         ════════════════════════════════════════════════════ */}
 
             {/* Layer A: farthest, most desaturated blue-grey */}
-           {/* Layer A: farthest, most desaturated blue-grey (Tropical Style) */}
-<polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#9DB6BE" : "#7B8EC5"} opacity={isFreeMode ? "0.38" : "0.45"} />
-<polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#8FADB8" : "#6E82BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
-<polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#88A8B5" : "#6878B8"} opacity={isFreeMode ? "0.40" : "0.50"} />
-<polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#A8BEC4" : "#7080C0"} opacity={isFreeMode ? "0.32" : "0.42"} />
-<polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#7FA2B0" : "#6575B8"} opacity={isFreeMode ? "0.38" : "0.50"} />
-<polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#90ACB7" : "#7082BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
-<polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#A7BBC1" : "#7A8EC5"} opacity={isFreeMode ? "0.34" : "0.42"} />
-           {/* Layer B: mid range (Tropical Forest Style) */}
-<polygon points={`-2,${HORIZON_Y} 10,${HORIZON_Y - 11} 20,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.72" />
-<polygon points={`14,${HORIZON_Y} 26,${HORIZON_Y - 15} 38,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
-<polygon points={`35,${HORIZON_Y} 44,${HORIZON_Y - 11} 52,${HORIZON_Y}`} fill={isFreeMode ? "#3E4A30" : "#4E6E4E"} opacity="0.72" />
-<polygon points={`60,${HORIZON_Y} 72,${HORIZON_Y - 14} 84,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
-<polygon points={`78,${HORIZON_Y} 88,${HORIZON_Y - 10} 100,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.70" />
-           {/* Tallest peak tips (Tropical Forest Canopy Style) */}
-<polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.48" : "0.6"} />
-<polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.50" : "0.6"} />
-<polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.52" : "0.6"} />
+            {/* Layer A: farthest, most desaturated blue-grey (Tropical Style) */}
+            <polygon points={`2,${HORIZON_Y} 12,${HORIZON_Y - 14} 22,${HORIZON_Y}`} fill={isFreeMode ? "#9DB6BE" : "#7B8EC5"} opacity={isFreeMode ? "0.38" : "0.45"} />
+            <polygon points={`10,${HORIZON_Y} 22,${HORIZON_Y - 18} 34,${HORIZON_Y}`} fill={isFreeMode ? "#8FADB8" : "#6E82BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
+            <polygon points={`30,${HORIZON_Y} 42,${HORIZON_Y - 20} 56,${HORIZON_Y}`} fill={isFreeMode ? "#88A8B5" : "#6878B8"} opacity={isFreeMode ? "0.40" : "0.50"} />
+            <polygon points={`44,${HORIZON_Y} 50,${HORIZON_Y - 15} 58,${HORIZON_Y}`} fill={isFreeMode ? "#A8BEC4" : "#7080C0"} opacity={isFreeMode ? "0.32" : "0.42"} />
+            <polygon points={`54,${HORIZON_Y} 65,${HORIZON_Y - 22} 78,${HORIZON_Y}`} fill={isFreeMode ? "#7FA2B0" : "#6575B8"} opacity={isFreeMode ? "0.38" : "0.50"} />
+            <polygon points={`68,${HORIZON_Y} 80,${HORIZON_Y - 17} 92,${HORIZON_Y}`} fill={isFreeMode ? "#90ACB7" : "#7082BE"} opacity={isFreeMode ? "0.36" : "0.45"} />
+            <polygon points={`80,${HORIZON_Y} 90,${HORIZON_Y - 13} 100,${HORIZON_Y}`} fill={isFreeMode ? "#A7BBC1" : "#7A8EC5"} opacity={isFreeMode ? "0.34" : "0.42"} />
+            {/* Layer B: mid range (Tropical Forest Style) */}
+            <polygon points={`-2,${HORIZON_Y} 10,${HORIZON_Y - 11} 20,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.72" />
+            <polygon points={`14,${HORIZON_Y} 26,${HORIZON_Y - 15} 38,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
+            <polygon points={`35,${HORIZON_Y} 44,${HORIZON_Y - 11} 52,${HORIZON_Y}`} fill={isFreeMode ? "#3E4A30" : "#4E6E4E"} opacity="0.72" />
+            <polygon points={`60,${HORIZON_Y} 72,${HORIZON_Y - 14} 84,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#507050"} opacity="0.72" />
+            <polygon points={`78,${HORIZON_Y} 88,${HORIZON_Y - 10} 100,${HORIZON_Y}`} fill={isFreeMode ? "#2D5A2D" : "#5E7A5E"} opacity="0.70" />
+            {/* Tallest peak tips (Tropical Forest Canopy Style) */}
+            <polygon points={`14,${HORIZON_Y - 15} 17,${HORIZON_Y - 18.5} 20,${HORIZON_Y - 15}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.48" : "0.6"} />
+            <polygon points={`40,${HORIZON_Y - 17} 44,${HORIZON_Y - 21} 48,${HORIZON_Y - 17}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.50" : "0.6"} />
+            <polygon points={`62,${HORIZON_Y - 19} 65,${HORIZON_Y - 23} 68,${HORIZON_Y - 19}`} fill={isFreeMode ? "#F7FBFF" : "white"} opacity={isFreeMode ? "0.52" : "0.6"} />
             {/* ═══════════════════════════════════════
             FREE MODE: GROUND — Sandy canyon banks + river
             LANE MODE: GROUND — Grass hills
@@ -1155,7 +1313,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </>
                 )}
 
-            {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
+                {/* ── LAYER 5 (free): River water surface (central trapezoid) ── */}
                 <polygon
                   points={`${VP_X - ROAD_HALF_HORIZON},${HORIZON_Y} ${VP_X + ROAD_HALF_HORIZON},${HORIZON_Y} 100,100 0,100`}
                   fill="url(#riverWater)"
@@ -1166,7 +1324,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   opacity="0.75"
                   style={{ pointerEvents: 'none' }}
                 />
-                
+
                 {/* انعكاس السماء في منتصف النهر لإعطاء واقعية وعمق 3D */}
                 <polygon
                   points={`${VP_X - 2.2},${HORIZON_Y} ${VP_X + 1.2},${HORIZON_Y} 58,100 41,100`}
@@ -1380,7 +1538,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       // ضفنا scrollOffset عشان الصخور تتحرك
                       const tAnim = (tBase + (scrollOffset / 100)) % 1;
                       if (tAnim < 0.02 || tAnim > 0.98) return null;
-                      
+
                       const bx = roadLeftX(tAnim);
                       const by = yAtT(tAnim);
                       const sc = 0.4 + tAnim * 1.2;
@@ -1399,12 +1557,12 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                         </g>
                       );
                     })}
-                    
+
                     {/* Rocky cliff shapes right bank */}
                     {[0.18, 0.42, 0.65, 0.85].map((tBase, ci) => {
                       const tAnim = (tBase + (scrollOffset / 100)) % 1;
                       if (tAnim < 0.02 || tAnim > 0.98) return null;
-                      
+
                       const bx = roadRightX(tAnim);
                       const by = yAtT(tAnim);
                       const sc = 0.4 + tAnim * 1.2;
@@ -1431,7 +1589,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 ) : (
                   /* Level 1: palm trees, beach huts, umbrellas */
                   BANK_DECORATIONS.map(({ side, type, t, spread }, di) => {
-                    
+
                     // 1. قسمنا scrollOffset على 125 عشان يمشي بنفس سرعة المراكب بالظبط
                     const tAnim = (t + (scrollOffset / 125)) % 1;
 
@@ -1441,14 +1599,14 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     // 3. حساب المكان والحجم لتطبيق المنظور (Perspective) 
                     const bx = side === 'L' ? roadLeftX(tAnim) : roadRightX(tAnim);
                     const by = yAtT(tAnim);
-                    
+
                     // 4. تكبير العنصر بحدة (Scale) كل ما يقرب من أسفل الشاشة
                     const variant = BANK_DECOR_VARIANTS[di % BANK_DECOR_VARIANTS.length];
                     const sc = (0.15 + Math.pow(tAnim, 1.5) * 2) * variant.scale;
                     const sign = side === 'L' ? -1 : 1;
-                    
+
                     // 5. حساب البعد عن النهر لضمان التناسق البصري
-                     const tx = bx + sign * (spread * sc * 1.2 + Math.pow(tAnim, 2) * 15 + variant.offset * sc);
+                    const tx = bx + sign * (spread * sc * 1.2 + Math.pow(tAnim, 2) * 15 + variant.offset * sc);
                     const ty = by + variant.y * sc;
                     if (type === 'palm') {
                       return (
@@ -1552,32 +1710,32 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   </g>
                 ))}
 
-              {coins.map((coin) => {
-                const cx = riverXAtT(coin.x, coin.t);
-                const cy = yAtT(coin.t);
-                const s = Math.max(1.8, coin.t * 4.2);
-                return (
-                  <g key={coin.id} transform={`translate(${cx}, ${cy})`}>
-                    <ellipse cx="0" cy={s * 0.38} rx={s * 0.7} ry={s * 0.2} fill="black" opacity="0.18" />
-                    <image
-                      href={COIN_SPRITE_SRC}
-                      x={-s * 0.5}
-                      y={-s * 0.8}
-                      width={s}
-                      height={s}
-                      preserveAspectRatio="xMidYMid meet"
-                    />
-                  </g>
-                );
-              })}
+                {coins.map((coin) => {
+                  const cx = riverXAtT(coin.x, coin.t);
+                  const cy = yAtT(coin.t);
+                  const s = Math.max(1.8, coin.t * 4.2);
+                  return (
+                    <g key={coin.id} transform={`translate(${cx}, ${cy})`}>
+                      <ellipse cx="0" cy={s * 0.38} rx={s * 0.7} ry={s * 0.2} fill="black" opacity="0.18" />
+                      <image
+                        href={COIN_SPRITE_SRC}
+                        x={-s * 0.5}
+                        y={-s * 0.8}
+                        width={s}
+                        height={s}
+                        preserveAspectRatio="xMidYMid meet"
+                      />
+                    </g>
+                  );
+                })}
 
-            {/* ── LAYER 11 (free): Sharks & Rocks ── */}
+                {/* ── LAYER 11 (free): Sharks & Rocks ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6; // سكيل التكبير
                   if (s < 0.5) return null;
-                  
+
                   const isLevel4 = level.id === 'level_4' || level.id === '4';
                   const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
                   const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
@@ -1585,16 +1743,16 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                     {isShark ? (
+                      {isShark ? (
                         /* ================= تصميم القرش ================= */
                         <>
                           {/* 1. موجات المياه (Ripples) حوالين القرش زي الصخرة بالظبط */}
-{/* صغرنا الـ rx لـ 1.0 والـ ry لـ 0.25 */}
-<ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.6" />
+                          {/* صغرنا الـ rx لـ 1.0 والـ ry لـ 0.25 */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.6" />
 
-{/* صغرنا الـ rx لـ 1.4 والـ ry لـ 0.35 */}
-<ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.30} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
-                          
+                          {/* صغرنا الـ rx لـ 1.4 والـ ry لـ 0.35 */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.30} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
+
                           {/* 2. صورة القرش (تم تكبيرها وتوسيط الزعنفة) */}
                           <image
                             href={imgSrc}
@@ -1602,7 +1760,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                             x={-s * 1.6}
                             y={-s * 1.7}
                             // كبرنا حجم القرش هنا 
-                            width={s * 2.9} 
+                            width={s * 2.9}
                             height={s * 2.9}
                             preserveAspectRatio="xMidYMid meet"
                             clipPath="url(#sharkClip)"
@@ -1632,10 +1790,10 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   );
                 })}
 
-               {/* ── LAYER 12 (free): Player boat ── */}
+                {/* ── LAYER 12 (free): Player boat ── */}
                 {(() => {
                   // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
-                  const s = isNoahLevel ? 14 : 10; 
+                  const s = isNoahLevel ? 14 : 10;
                   const cy = 94;
                   const svgX = riverXAtT(playerX, 1.0);
                   // Tilt based on velocity
@@ -1788,7 +1946,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   );
                 })}
 
-               {/* ════ LAYER 9 — ROADSIDE TREES ════ */}
+                {/* ════ LAYER 9 — ROADSIDE TREES ════ */}
                 {/* Left Trees */}
                 {[
                   { t: 0.08, type: 'pine', spread: 5 },
@@ -1805,13 +1963,13 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   // تحريك الأشجار مع الطريق
                   const tAnim = (tBase + (scrollOffset / 150)) % 1;
                   if (tAnim < 0.01 || tAnim > 0.99) return null;
-                  
+
                   const y = yAtT(tAnim);
                   const lx = roadLeftX(tAnim);
                   const sc = 0.18 + tAnim * 1.6;
                   // إبعاد الأشجار تدريجياً عن الطريق لتجنب التداخل
                   const tx = lx - (spread * sc * 0.8 + Math.pow(tAnim, 2) * 15);
-                  
+
                   return (
                     <g key={`lt${i}`} transform={`translate(${tx},${y}) scale(${sc})`}>
                       {type === 'pine' ? (
@@ -1834,7 +1992,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     </g>
                   );
                 })}
-                
+
                 {/* Right Trees */}
                 {[
                   { t: 0.10, type: 'round', spread: 5 },
@@ -1850,13 +2008,13 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 ].map(({ t: tBase, type, spread }, i) => {
                   const tAnim = (tBase + (scrollOffset / 150)) % 1;
                   if (tAnim < 0.01 || tAnim > 0.99) return null;
-                  
+
                   const y = yAtT(tAnim);
                   const rx = roadRightX(tAnim);
                   const sc = 0.18 + tAnim * 1.6;
                   // إبعاد الأشجار تدريجياً عن الطريق
                   const tx = rx + (spread * sc * 0.8 + Math.pow(tAnim, 2) * 15);
-                  
+
                   return (
                     <g key={`rt${i}`} transform={`translate(${tx},${y}) scale(${sc})`}>
                       {type === 'pine' ? (
@@ -1916,28 +2074,28 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     </g>
                   );
                 })}
-{/* ════ LAYER 12 — ENEMY CARS ════ */}
+                {/* ════ LAYER 12 — ENEMY CARS ════ */}
                 {obstacles.map((obs) => {
                   const cx = laneXAtT(obs.lane, obs.t);
                   const cy = yAtT(obs.t);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
-                  
+
                   const isLevel5 = level.id === 'level_5' || level.id === '5';
                   const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
                   const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
-                  
+
                   // حددنا إذا كان العائق ده هو الشحم (رقم 3 في مصفوفة LEVEL_5_ENEMIES)
                   const isGrease = isLevel5 && obs.spriteIndex === 3;
 
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                       {/* الظل يترسم للعربيات بس، الشحم ملوش ظل لأنه بقعة على الأرض */}
-                      {!isGrease && (
+                      {!isGrease && !(isLevel5 || (level.id === 'level_2' || level.id === '2')) && (
                         /* التعديل: الظل بقى 1.0 عشان يناسب عرض 2.6 */
                         <ellipse cx="0" cy={s * 0.22} rx={s * 1.0} ry={s * 0.25} fill="black" opacity="0.45" />
                       )}
-                      
+
                       <image
                         href={imgSrc}
                         /* التعديل: السنترة بقت على -1.3 (اللي هي نص الـ 2.6) */
@@ -1954,6 +2112,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
 
                 {/* ════ LAYER 13 — PLAYER CAR ════ */}
                 {(() => {
+                  const isLevel5 = level.id === 'level_5' || level.id === '5';
                   const s = 8;
                   const cy = 93;
                   return (
@@ -1961,16 +2120,18 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       animate={{ x: laneXAtT(playerLane, 1.0), y: cy }}
                       transition={{ type: 'tween', duration: 0.15, ease: 'easeOut' }}
                     >
-                      <ellipse
-                        cx="0"
-                        cy={s * 0.05}
-                        /* التعديل: ظل عربية اللاعب بقى 1.0 برضه */
-                        rx={s * 0.90}
-                        ry={s * 0.12}
-                        fill="black"
-                        opacity="0.25"
-                      />
-                     <image
+                      {!(isLevel5 || (level.id === 'level_2' || level.id === '2')) && (
+                        <ellipse
+                          cx="0"
+                          cy={s * 0.05}
+                          /* التعديل: ظل عربية اللاعب بقى 1.0 برضه */
+                          rx={s * 0.90}
+                          ry={s * 0.12}
+                          fill="black"
+                          opacity="0.25"
+                        />
+                      )}
+                      <image
                         href={playerCarImg}
                         /* التعديل: السنترة بقت على -1.3 */
                         x={-s * 1.3}
@@ -2008,64 +2169,64 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         <div className="flex items-center justify-between px-3 pt-2 gap-2">
           {/* Score + coins */}
           <div className="flex items-center gap-1.5">
-          <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
-            style={{
-              background: 'rgba(0,0,0,0.55)',
-              backdropFilter: 'blur(4px)',
-              pointerEvents: 'none',
-              minWidth: '5.5rem',
-              justifyContent: 'center',
-            }}
-          >
-            <span className="text-yellow-300" style={{ fontSize: '0.75rem' }}>⭐</span>
-            <span
-              className="text-white"
+            <div
+              className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
               style={{
-                fontWeight: 900,
-                fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)',
-                fontFamily: "'Cairo', sans-serif",
-                display: 'inline-block',
-                minWidth: '3rem',
-                textAlign: 'center',
+                background: 'rgba(0,0,0,0.55)',
+                backdropFilter: 'blur(4px)',
+                pointerEvents: 'none',
+                minWidth: '5.5rem',
+                justifyContent: 'center',
               }}
             >
-              {toArabicNumerals(score)}
-            </span>
-          </div>
-          <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
-            style={{
-              background: 'rgba(0,0,0,0.55)',
-              backdropFilter: 'blur(4px)',
-              pointerEvents: 'none',
-              minWidth: '5.5rem',
-              justifyContent: 'center',
-            }}
-          >
-            <ImageWithFallback
-              src={COIN_SPRITE_SRC}
-              alt=""
-              style={{ width: 14, height: 14, objectFit: 'contain' }}
-            />
-            <motion.span
-              key={coinsCollected}
-              initial={{ scale: 1.12 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 24 }}
-              className="text-white"
+              <span className="text-yellow-300" style={{ fontSize: '0.75rem' }}>⭐</span>
+              <span
+                className="text-white"
+                style={{
+                  fontWeight: 900,
+                  fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)',
+                  fontFamily: "'Cairo', sans-serif",
+                  display: 'inline-block',
+                  minWidth: '3rem',
+                  textAlign: 'center',
+                }}
+              >
+                {toArabicNumerals(score)}
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-1.5 px-3 py-1 rounded-2xl shadow-lg"
               style={{
-                fontWeight: 900,
-                fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)',
-                fontFamily: "'Cairo', sans-serif",
-                display: 'inline-block',
-                minWidth: '3rem',
-                textAlign: 'center',
+                background: 'rgba(0,0,0,0.55)',
+                backdropFilter: 'blur(4px)',
+                pointerEvents: 'none',
+                minWidth: '5.5rem',
+                justifyContent: 'center',
               }}
             >
-              {toArabicNumerals(coinsCollected)}
-            </motion.span>
-          </div>
+              <ImageWithFallback
+                src={COIN_SPRITE_SRC}
+                alt=""
+                style={{ width: 14, height: 14, objectFit: 'contain' }}
+              />
+              <motion.span
+                key={coinsCollected}
+                initial={{ scale: 1.12 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+                className="text-white"
+                style={{
+                  fontWeight: 900,
+                  fontSize: 'clamp(0.85rem, 2.5vw, 1.2rem)',
+                  fontFamily: "'Cairo', sans-serif",
+                  display: 'inline-block',
+                  minWidth: '3rem',
+                  textAlign: 'center',
+                }}
+              >
+                {toArabicNumerals(coinsCollected)}
+              </motion.span>
+            </div>
           </div>
 
           {/* Pause button (center) */}
@@ -2190,60 +2351,60 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         {/* Spacer */}
         <div className="flex-1" />
 
-{/* ── FREE MODE: Hold-to-steer zones ── */}
-      {isFreeMode && (
-        <div className="absolute bottom-0 left-0 right-0 w-full flex" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
-          {/* الزرار الأول: السهم الشمال */}
-          <button
-            /* التعديل: غيرنا pl-12 لـ pl-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-            className="flex-1 flex items-end justify-start pl-24 pb-6"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.85)',
-              fontSize: '2rem',
-              textShadow: '0 4px 15px rgba(0,0,0,0.7)',
-              userSelect: 'none',
-              touchAction: 'none',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            onPointerDown={(e) => { 
-              e.stopPropagation(); 
-              steerLeftRef.current = true; 
-              touchXRef.current = null; 
-            }}
-            onPointerUp={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
-            onPointerLeave={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
-          >
-            ◀
-          </button>
-          
-          {/* الزرار التاني: السهم اليمين */}
-          <button
-            /* التعديل: غيرنا pr-12 لـ pr-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-            className="flex-1 flex items-end justify-end pr-24 pb-6"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.85)',
-              fontSize: '2rem',
-              textShadow: '0 4px 15px rgba(0,0,0,0.7)',
-              userSelect: 'none',
-              touchAction: 'none',
-              WebkitTapHighlightColor: 'transparent',
-            }}
-            onPointerDown={(e) => { 
-              e.stopPropagation(); 
-              steerRightRef.current = true; 
-              touchXRef.current = null; 
-            }}
-            onPointerUp={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
-            onPointerLeave={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
-          >
-            ▶
-          </button>
-        </div>
-      )}
+        {/* ── FREE MODE: Hold-to-steer zones ── */}
+        {isFreeMode && (
+          <div className="absolute bottom-0 left-0 right-0 w-full flex" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
+            {/* الزرار الأول: السهم الشمال */}
+            <button
+              /* التعديل: غيرنا pl-12 لـ pl-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
+              className="flex-1 flex items-end justify-start pl-24 pb-6"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontSize: '2rem',
+                textShadow: '0 4px 15px rgba(0,0,0,0.7)',
+                userSelect: 'none',
+                touchAction: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                steerLeftRef.current = true;
+                touchXRef.current = null;
+              }}
+              onPointerUp={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
+              onPointerLeave={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
+            >
+              ◀
+            </button>
+
+            {/* الزرار التاني: السهم اليمين */}
+            <button
+              /* التعديل: غيرنا pr-12 لـ pr-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
+              className="flex-1 flex items-end justify-end pr-24 pb-6"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontSize: '2rem',
+                textShadow: '0 4px 15px rgba(0,0,0,0.7)',
+                userSelect: 'none',
+                touchAction: 'none',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                steerRightRef.current = true;
+                touchXRef.current = null;
+              }}
+              onPointerUp={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
+              onPointerLeave={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
+            >
+              ▶
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── PAUSE OVERLAY ── */}
@@ -2287,6 +2448,25 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         )}
       </AnimatePresence>
 
+      {/* Gas station warning */}
+      {showGasStationWarning && !showGasStation && !gasStationVisited && (
+        <div
+          className="absolute top-24 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full shadow-lg z-20 flex justify-center items-center gap-2"
+          style={{
+            background: 'rgba(234, 179, 8, 0.95)', // Yellow
+            color: '#1e293b', // Dark text for contrast
+            fontWeight: 900,
+            fontSize: 'clamp(0.85rem, 2vw, 1.1rem)',
+            fontFamily: "'Cairo', sans-serif",
+            animation: 'pulse 1s infinite',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <span>⚠️</span>
+          <span>محطة البنزين جاية</span>
+        </div>
+      )}
+
       {/* Low fuel warning */}
       {fuelState === 'low' && !showGasStation && !gasStationVisited && (
         <div
@@ -2326,6 +2506,6 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           50% { opacity: 0.5; }
         }
       `}</style>
-      </div>
+    </div>
   );
 }

@@ -418,15 +418,10 @@ function TitleScreen({
           ☁️
         </div>
 
-        {/* الطيارة - تم نقلها هنا وإضافة تسريع الكارت */}
+        {/* الطيارة */}
         <div
-          className="absolute text-5xl"
-          style={{ 
-            top: '35%', right: 0, 
-            willChange: 'transform', 
-            textShadow: '0 4px 8px rgba(0,0,0,0.3)', 
-            animation: 'moveLeftFlipped 11s linear infinite both' 
-          }}>
+          className="absolute text-5xl drop-shadow-md"
+          style={{ animation: 'flyDiagonalLeft 15s linear infinite both' }}>
           ✈️
         </div>
       </div>
@@ -441,7 +436,7 @@ function TitleScreen({
           {/* تم إزالة drop-shadow واستخدام transform GPU */}
           <div className="absolute bottom-1 text-4xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 8px rgba(0,0,0,0.3)', animation: 'moveLeft 12s linear infinite 0s both' }}>🚤</div>
           {/* ظبطنا مقاس السفينة لـ text-5xl عشان متتقطعش من الحواف */}
-          <div className="absolute bottom-2 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 16s linear infinite 0s both' }}>🚢</div>
+          <div className="absolute bottom-2 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 16s linear infinite 0s both' }}>🛥️</div>
         </div>
 
         {/* Road layer */}
