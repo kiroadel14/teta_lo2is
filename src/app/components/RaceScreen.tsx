@@ -1916,8 +1916,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     </g>
                   );
                 })}
-
-                {/* ════ LAYER 12 — ENEMY CARS ════ */}
+{/* ════ LAYER 12 — ENEMY CARS ════ */}
                 {obstacles.map((obs) => {
                   const cx = laneXAtT(obs.lane, obs.t);
                   const cy = yAtT(obs.t);
@@ -1935,16 +1934,19 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                       {/* الظل يترسم للعربيات بس، الشحم ملوش ظل لأنه بقعة على الأرض */}
                       {!isGrease && (
-                        <ellipse cx="0" cy={s * 0.22} rx={s * 0.9} ry={s * 0.25} fill="black" opacity="0.45" />
+                        /* التعديل: قللنا الظل لـ 1.1 عشان يناسب العرض الجديد */
+                        <ellipse cx="0" cy={s * 0.22} rx={s * 1.1} ry={s * 0.25} fill="black" opacity="0.45" />
                       )}
                       
                       <image
                         href={imgSrc}
-                        x={-s * 1.2}
+                        /* التعديل: النص بالسالب عشان السنترة (-1.4) */
+                        x={-s * 1.4}
                         y={isGrease ? -s * 0.8 : -s * 1.4}
-                        width={s * 2.4}
+                        /* التعديل: العرض بقى 2.8 زي ما طلبت */
+                        width={s * 2.8}
                         height={s * 2.2}
-                        preserveAspectRatio="xMidYMid meet"
+                        preserveAspectRatio="none"
                       />
                     </g>
                   );
@@ -1962,18 +1964,21 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       <ellipse
                         cx="0"
                         cy={s * 0.05}
-                        rx={s * 0.7}
+                        /* التعديل: قللنا ظل عربية اللاعب لـ 1.1 */
+                        rx={s * 1.1}
                         ry={s * 0.15}
                         fill="black"
                         opacity="0.25"
                       />
                      <image
                         href={playerCarImg}
-                        x={-s * 1.25}
+                        /* التعديل: النص بالسالب (-1.4) */
+                        x={-s * 1.4}
                         y={-s * 1.15}
-                        width={s * 2.5}
+                        /* التعديل: العرض بقى 2.8 للعربية بتاعتك كمان */
+                        width={s * 2.8}
                         height={s * 1.9}
-                        preserveAspectRatio="xMidYMid meet"
+                        preserveAspectRatio="none"
                       />
                     </motion.g>
                   );

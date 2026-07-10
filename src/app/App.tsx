@@ -435,13 +435,13 @@ function TitleScreen({
       <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none flex flex-col justify-end z-0 overflow-hidden">
 
         {/* River layer */}
-        <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 z-0">
+        <div className="relative w-full h-12 bg-[#3B82F6] border-t border-blue-400/40 z-10">
           <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
           <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
           {/* تم إزالة drop-shadow واستخدام transform GPU */}
           <div className="absolute bottom-1 text-4xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 8px rgba(0,0,0,0.3)', animation: 'moveLeft 14s linear infinite 0s both' }}>🚤</div>
           {/* ظبطنا مقاس السفينة لـ text-5xl عشان متتقطعش من الحواف */}
-          <div className="absolute bottom-1 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 18s linear infinite 0s both' }}>🚢</div>
+          <div className="absolute bottom-2 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 18s linear infinite 0s both' }}>🚢</div>
         </div>
 
         {/* Road layer */}
