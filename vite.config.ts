@@ -28,8 +28,24 @@ export default defineConfig({
     },
   },
 
-  // Important for GitHub Pages
- base: "/teta_lo2is/",
+  base: "/teta_lo2is/",
 
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  build: {
+    chunkSizeWarningLimit: 1000,
+
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('pixi')) return 'pixi';
+            if (id.includes('react')) return 'react';
+            if (id.includes('react-router')) return 'router';
+            return 'vendor';
+          }
+        },
+      },
+    },
+  },
 })
