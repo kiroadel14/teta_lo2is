@@ -18,7 +18,7 @@ import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
 import playerboatImg from './player-boat.png';
 import sharkImg from './shark.png';
-import rockImg from './rock.png'; // 👈 ضيف السطر ده وتأكد من اسم الصورة
+import rockImg from './rock.png'; 
 import orbitImg from './orbit.png';
 // المصفوفة العادية لليفل 2
 const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
@@ -239,9 +239,31 @@ const WATER_SPARKLES = [
 
 function shorelinePath(side: 'L' | 'R', inset: number): string {
   const samples = [0, 0.18, 0.36, 0.54, 0.72, 0.9, 1];
+
+  // 1. جلب إحداثيات النقطة اللي تحت خالص (أسفل الشاشة)
+  const bottomT = 0; // بافتراض إن 0 هي بداية الشاشة من تحت
+  const bottomX = side === 'L' 
+    ? roadLeftX(bottomT) + inset 
+    : roadRightX(bottomT) - inset;
+  const bottomY = yAtT(bottomT);
+
+  // 2. جلب إحداثيات النقطة اللي فوق خالص (عند خط الأفق)
+  const topT = 1; // بافتراض إن 1 هي أبعد نقطة في الأفق
+  const topX = side === 'L' 
+    ? roadLeftX(topT) + inset 
+    : roadRightX(topT) - inset;
+  const topY = yAtT(topT);
+
   return samples.map((t, i) => {
-    const x = side === 'L' ? roadLeftX(t) + inset : roadRightX(t) - inset;
+    // نجيب ارتفاع الـ Y عند النقطة الحالية
     const y = yAtT(t);
+    
+    // 3. (السر هنا) معادلة الخط المستقيم: 
+    // بنحسب نسبة الـ y الحالية بالنسبة للمسافة الكلية، وبناءً عليها بنستنتج الـ x 
+    // عشان نضمن إن كل النقاط تقع على خط مستقيم واحد بدون أي كسرات
+    const progress = (y - bottomY) / (topY - bottomY);
+    const x = bottomX + progress * (topX - bottomX);
+
     return `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`;
   }).join(' ');
 }
@@ -2163,20 +2185,21 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         {/* Spacer */}
         <div className="flex-1" />
 
-       {/* ── FREE MODE: Hold-to-steer zones ── */}
+    {/* ── FREE MODE: Hold-to-steer zones ── */}
         {isFreeMode && (
-          <div className="flex w-full" style={{ height: '22%', pointerEvents: 'all' }} dir="ltr">
-            {/* الزرار الأول: السهم الشمال (هيظهر على الشمال عشان ضفنا dir="ltr") */}
+          <div className="flex w-full" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
+            {/* الزرار الأول: السهم الشمال */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
-                background: 'rgba(255,255,255,0.08)',
-                borderTop: '1px solid rgba(255,255,255,0.12)',
-                borderRight: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: '1.8rem',
+                background: 'transparent', /* 👈 شيلنا الخلفية المبيضة تماماً */
+                border: 'none', /* 👈 شيلنا الخطوط البيضا اللي كانت قاطعة الشاشة */
+                color: 'rgba(255, 255, 255, 0.85)', /* لون أبيض ناصع شوية */
+                fontSize: '1.8rem', /* 👈 كبرنا الأسهم جداً عشان تبقى واضحة ومريحة */
+                textShadow: '0 4px 15px rgba(0,0,0,0.7)', /* 👈 ضفنا ظل أسود ورا السهم عشان ينطق فوق الماية */
                 userSelect: 'none',
                 touchAction: 'none',
+                WebkitTapHighlightColor: 'transparent', /* بتمنع المربع الأزرق بتاع الموبايل لما تدوس */
               }}
               onPointerDown={(e) => { 
                 e.stopPropagation(); 
@@ -2189,17 +2212,18 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
               ◀
             </button>
             
-            {/* الزرار التاني: السهم اليمين (هيظهر على اليمين) */}
+            {/* الزرار التاني: السهم اليمين */}
             <button
               className="flex-1 flex items-center justify-center"
               style={{
-                background: 'rgba(255,255,255,0.08)',
-                borderTop: '1px solid rgba(255,255,255,0.12)',
-                borderLeft: '1px solid rgba(255,255,255,0.08)',
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: '1.8rem',
+                background: 'transparent', /* 👈 شيلنا الخلفية المبيضة تماماً */
+                border: 'none', /* 👈 شيلنا الخطوط البيضا */
+                color: 'rgba(255, 255, 255, 0.85)',
+                fontSize: '1.8rem', /* 👈 كبرنا الأسهم */
+                textShadow: '0 4px 15px rgba(0,0,0,0.7)',
                 userSelect: 'none',
                 touchAction: 'none',
+                WebkitTapHighlightColor: 'transparent',
               }}
               onPointerDown={(e) => { 
                 e.stopPropagation(); 
