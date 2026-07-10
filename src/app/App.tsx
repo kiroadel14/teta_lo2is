@@ -222,7 +222,8 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
             className="absolute inset-0 flex flex-col items-center justify-center p-6 text-white"
-            style={{ background: '#1E3A5F', dir: 'rtl' }}
+            dir="rtl"
+            style={{ background: '#1E3A5F' }}
           >
             <div className="bg-slate-800/90 p-6 rounded-3xl border-4 border-yellow-400 w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
               <h2 className="text-3xl font-black text-center text-yellow-300 mb-4 drop-shadow">🏆 لوحة المتصدرين</h2>

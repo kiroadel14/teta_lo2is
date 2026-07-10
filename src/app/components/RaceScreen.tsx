@@ -534,7 +534,7 @@ setScrollOffset((s) => (s + level.obstacleSpeed * deltaSeconds * 6000) % 100000)
           spawnFrameCounter.current -= level.spawnRate;
 
 // بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
-const isLevel5 = level.id === 'level_5' || level.id === 5;
+const isLevel5 = level.id === 'level_5' || level.id === '5';
 const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
 const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           let lane: number;
@@ -1556,7 +1556,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   const s = obs.t * 6; // سكيل التكبير
                   if (s < 0.5) return null;
                   
-                  const isLevel4 = level.id === 'level_4' || level.id === 4;
+                  const isLevel4 = level.id === 'level_4' || level.id === '4';
                   const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
                   const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
                   const isShark = imgSrc === sharkImg;
@@ -1902,7 +1902,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                   const s = obs.t * 6;
                   if (s < 0.5) return null;
                   
-                  const isLevel5 = level.id === 'level_5' || level.id === 5;
+                  const isLevel5 = level.id === 'level_5' || level.id === '5';
                   const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
                   const imgSrc = currentEnemies[obs.spriteIndex] || ENEMY_CARS[0];
                   

@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db } from "../firebase";
 
 // إنشاء مستخدم أول مرة
 export async function createUserData(uid: string, email: string) {
