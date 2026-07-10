@@ -1934,17 +1934,17 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                       {/* الظل يترسم للعربيات بس، الشحم ملوش ظل لأنه بقعة على الأرض */}
                       {!isGrease && (
-                        /* التعديل: قللنا الظل لـ 1.1 عشان يناسب العرض الجديد */
-                        <ellipse cx="0" cy={s * 0.22} rx={s * 1.1} ry={s * 0.25} fill="black" opacity="0.45" />
+                        /* التعديل: الظل بقى 1.0 عشان يناسب عرض 2.6 */
+                        <ellipse cx="0" cy={s * 0.22} rx={s * 1.0} ry={s * 0.25} fill="black" opacity="0.45" />
                       )}
                       
                       <image
                         href={imgSrc}
-                        /* التعديل: النص بالسالب عشان السنترة (-1.4) */
-                        x={-s * 1.4}
+                        /* التعديل: السنترة بقت على -1.3 (اللي هي نص الـ 2.6) */
+                        x={-s * 1.3}
                         y={isGrease ? -s * 0.8 : -s * 1.4}
-                        /* التعديل: العرض بقى 2.8 زي ما طلبت */
-                        width={s * 2.8}
+                        /* التعديل: العرض بقى 2.6 */
+                        width={s * 2.6}
                         height={s * 2.2}
                         preserveAspectRatio="none"
                       />
@@ -1955,7 +1955,7 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                 {/* ════ LAYER 13 — PLAYER CAR ════ */}
                 {(() => {
                   const s = 8;
-                  const cy = 95;
+                  const cy = 93;
                   return (
                     <motion.g
                       animate={{ x: laneXAtT(playerLane, 1.0), y: cy }}
@@ -1964,19 +1964,19 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
                       <ellipse
                         cx="0"
                         cy={s * 0.05}
-                        /* التعديل: قللنا ظل عربية اللاعب لـ 1.1 */
-                        rx={s * 1.1}
-                        ry={s * 0.15}
+                        /* التعديل: ظل عربية اللاعب بقى 1.0 برضه */
+                        rx={s * 0.90}
+                        ry={s * 0.12}
                         fill="black"
                         opacity="0.25"
                       />
                      <image
                         href={playerCarImg}
-                        /* التعديل: النص بالسالب (-1.4) */
-                        x={-s * 1.4}
-                        y={-s * 1.15}
-                        /* التعديل: العرض بقى 2.8 للعربية بتاعتك كمان */
-                        width={s * 2.8}
+                        /* التعديل: السنترة بقت على -1.3 */
+                        x={-s * 1.3}
+                        y={-s * 0.98}
+                        /* التعديل: العرض بقى 2.6 */
+                        width={s * 2.6}
                         height={s * 1.9}
                         preserveAspectRatio="none"
                       />
@@ -2190,58 +2190,60 @@ const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
         {/* Spacer */}
         <div className="flex-1" />
 
-    {/* ── FREE MODE: Hold-to-steer zones ── */}
-        {isFreeMode && (
-          <div className="flex w-full" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
-            {/* الزرار الأول: السهم الشمال */}
-            <button
-              className="flex-1 flex items-center justify-center"
-              style={{
-                background: 'transparent', /* 👈 شيلنا الخلفية المبيضة تماماً */
-                border: 'none', /* 👈 شيلنا الخطوط البيضا اللي كانت قاطعة الشاشة */
-                color: 'rgba(255, 255, 255, 0.85)', /* لون أبيض ناصع شوية */
-                fontSize: '1.8rem', /* 👈 كبرنا الأسهم جداً عشان تبقى واضحة ومريحة */
-                textShadow: '0 4px 15px rgba(0,0,0,0.7)', /* 👈 ضفنا ظل أسود ورا السهم عشان ينطق فوق الماية */
-                userSelect: 'none',
-                touchAction: 'none',
-                WebkitTapHighlightColor: 'transparent', /* بتمنع المربع الأزرق بتاع الموبايل لما تدوس */
-              }}
-              onPointerDown={(e) => { 
-                e.stopPropagation(); 
-                steerLeftRef.current = true; 
-                touchXRef.current = null; 
-              }}
-              onPointerUp={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
-              onPointerLeave={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
-            >
-              ◀
-            </button>
-            
-            {/* الزرار التاني: السهم اليمين */}
-            <button
-              className="flex-1 flex items-center justify-center"
-              style={{
-                background: 'transparent', /* 👈 شيلنا الخلفية المبيضة تماماً */
-                border: 'none', /* 👈 شيلنا الخطوط البيضا */
-                color: 'rgba(255, 255, 255, 0.85)',
-                fontSize: '1.8rem', /* 👈 كبرنا الأسهم */
-                textShadow: '0 4px 15px rgba(0,0,0,0.7)',
-                userSelect: 'none',
-                touchAction: 'none',
-                WebkitTapHighlightColor: 'transparent',
-              }}
-              onPointerDown={(e) => { 
-                e.stopPropagation(); 
-                steerRightRef.current = true; 
-                touchXRef.current = null; 
-              }}
-              onPointerUp={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
-              onPointerLeave={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
-            >
-              ▶
-            </button>
-          </div>
-        )}
+{/* ── FREE MODE: Hold-to-steer zones ── */}
+      {isFreeMode && (
+        <div className="absolute bottom-0 left-0 right-0 w-full flex" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
+          {/* الزرار الأول: السهم الشمال */}
+          <button
+            /* التعديل: غيرنا pl-12 لـ pl-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
+            className="flex-1 flex items-end justify-start pl-24 pb-6"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '2rem',
+              textShadow: '0 4px 15px rgba(0,0,0,0.7)',
+              userSelect: 'none',
+              touchAction: 'none',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+            onPointerDown={(e) => { 
+              e.stopPropagation(); 
+              steerLeftRef.current = true; 
+              touchXRef.current = null; 
+            }}
+            onPointerUp={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
+            onPointerLeave={(e) => { e.stopPropagation(); steerLeftRef.current = false; }}
+          >
+            ◀
+          </button>
+          
+          {/* الزرار التاني: السهم اليمين */}
+          <button
+            /* التعديل: غيرنا pr-12 لـ pr-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
+            className="flex-1 flex items-end justify-end pr-24 pb-6"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(255, 255, 255, 0.85)',
+              fontSize: '2rem',
+              textShadow: '0 4px 15px rgba(0,0,0,0.7)',
+              userSelect: 'none',
+              touchAction: 'none',
+              WebkitTapHighlightColor: 'transparent',
+            }}
+            onPointerDown={(e) => { 
+              e.stopPropagation(); 
+              steerRightRef.current = true; 
+              touchXRef.current = null; 
+            }}
+            onPointerUp={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
+            onPointerLeave={(e) => { e.stopPropagation(); steerRightRef.current = false; }}
+          >
+            ▶
+          </button>
+        </div>
+      )}
       </div>
 
       {/* ── PAUSE OVERLAY ── */}

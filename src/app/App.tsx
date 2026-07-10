@@ -425,7 +425,7 @@ function TitleScreen({
             top: '35%', right: 0, 
             willChange: 'transform', 
             textShadow: '0 4px 8px rgba(0,0,0,0.3)', 
-            animation: 'moveLeftFlipped 12s linear infinite both' 
+            animation: 'moveLeftFlipped 11s linear infinite both' 
           }}>
           ✈️
         </div>
@@ -439,9 +439,9 @@ function TitleScreen({
           <div className="absolute top-1 left-0 right-0 h-px bg-white/20" />
           <div className="absolute top-3 left-0 right-0 h-px bg-white/10" />
           {/* تم إزالة drop-shadow واستخدام transform GPU */}
-          <div className="absolute bottom-1 text-4xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 8px rgba(0,0,0,0.3)', animation: 'moveLeft 14s linear infinite 0s both' }}>🚤</div>
+          <div className="absolute bottom-1 text-4xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 8px rgba(0,0,0,0.3)', animation: 'moveLeft 12s linear infinite 0s both' }}>🚤</div>
           {/* ظبطنا مقاس السفينة لـ text-5xl عشان متتقطعش من الحواف */}
-          <div className="absolute bottom-2 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 18s linear infinite 0s both' }}>🚢</div>
+          <div className="absolute bottom-2 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 6px 12px rgba(0,0,0,0.4)', animation: 'moveLeft 16s linear infinite 0s both' }}>🚢</div>
         </div>
 
         {/* Road layer */}
@@ -450,7 +450,7 @@ function TitleScreen({
             className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 opacity-40"
             style={{ backgroundImage: 'repeating-linear-gradient(to right, transparent, transparent 20px, white 20px, white 40px)' }}
           />
-          <div className="absolute bottom-1 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 10px rgba(0,0,0,0.5)', animation: 'moveLeft 8s linear infinite both' }}>🏎️</div>
+          <div className="absolute bottom-1 text-5xl" style={{ right: 0, willChange: 'transform', textShadow: '0 4px 10px rgba(0,0,0,0.5)', animation: 'moveLeft 7s linear infinite both' }}>🏎️</div>
         </div>
       </div>
 
