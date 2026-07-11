@@ -2412,7 +2412,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             {/* الزرار الأول: السهم الشمال */}
             <button
               /* التعديل: غيرنا pl-12 لـ pl-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-              className="flex-1 flex items-end justify-start pl-24 pb-6"
+              className="flex-1 flex items-end justify-start pl-30 pb-6"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -2437,7 +2437,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             {/* الزرار التاني: السهم اليمين */}
             <button
               /* التعديل: غيرنا pr-12 لـ pr-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-              className="flex-1 flex items-end justify-end pr-24 pb-6"
+              className="flex-1 flex items-end justify-end pr-30 pb-6"
               style={{
                 background: 'transparent',
                 border: 'none',
