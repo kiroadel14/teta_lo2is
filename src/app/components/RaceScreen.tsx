@@ -11,8 +11,6 @@ import enemyCar3Img from './enemy-car-3.png';
 import mainLoopSound from './main-loop.mp3';
 import crashSound from './crash.mp3';
 import fuelBonusSound from './fuel-bonus.mp3';
-import winnerGameSound from './winner-game.mp3';
-import gameOverSound from './game-over.mp3';
 import coinSound from './coin.mp3';
 import playerPlaneImg from './player-plane.png';
 import greaseImg from './grease.png';
@@ -277,10 +275,9 @@ interface SeamlessAudio {
 
 interface SfxPlayer {
   playCrash: () => void;
-  playWinner: () => void;
-  playGameOver: () => void;
   playCoin: () => void;
   setMuted: (muted: boolean) => void;
+  stopAll: () => void;
 }
 
 export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
@@ -431,14 +428,11 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 
     const sfxBuffers: Record<string, AudioBuffer | null> = {
       crash: null,
-      winner: null,
-      gameOver: null,
       coin: null
     };
+    const activeSfxSources = new Set<AudioBufferSourceNode>();
 
     loadBuffer(crashSound).then(b => { if (!isCleanedUp) sfxBuffers.crash = b; });
-    loadBuffer(winnerGameSound).then(b => { if (!isCleanedUp) sfxBuffers.winner = b; });
-    loadBuffer(gameOverSound).then(b => { if (!isCleanedUp) sfxBuffers.gameOver = b; });
     loadBuffer(coinSound).then(b => { if (!isCleanedUp) sfxBuffers.coin = b; });
 
     const playSfx = (bufferName: keyof typeof sfxBuffers, volume = 1.0) => {
@@ -457,16 +451,23 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
       } else {
         source.connect(sfxGainNode);
       }
+      activeSfxSources.add(source);
+      source.onended = () => activeSfxSources.delete(source);
       source.start();
     };
 
     sfxPlayerRef.current = {
       playCrash: () => playSfx('crash'),
-      playWinner: () => playSfx('winner'),
-      playGameOver: () => playSfx('gameOver'),
       playCoin: () => playSfx('coin', 0.5),
       setMuted: (muted: boolean) => {
         sfxGainNode.gain.value = muted ? 0 : 1.0;
+      },
+      stopAll: () => {
+        activeSfxSources.forEach((source) => {
+          try { source.stop(); } catch (e) { }
+          source.disconnect();
+        });
+        activeSfxSources.clear();
       }
     };
 
@@ -474,6 +475,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 
     return () => {
       isCleanedUp = true;
+      sfxPlayerRef.current?.stopAll();
       mainLoopRef.current?.stop();
     };
   }, []);
@@ -914,8 +916,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         // ── Game over: fuel empty (before finish) ─────────────────────────
         if (fuelRef.current <= 0 && !gameOverFiredRef.current) {
           gameOverFiredRef.current = true;
-          // 👇 ده السطر بتاع صوت الخسارة
-          sfxPlayerRef.current?.playGameOver();
+          sfxPlayerRef.current?.stopAll();
+          mainLoopRef.current?.stop();
           const distanceScore = scoreRef.current;
           const stars = distanceScore >= level.survivalTargetDistance ? 3 : distanceScore >= level.survivalTargetDistance * 0.6 ? 2 : distanceScore >= level.survivalTargetDistance * 0.3 ? 1 : 0;
           const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);
@@ -926,8 +928,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         // ── Win: full distance completed AND still have fuel ───────────────
         if (distanceRef.current >= level.survivalTargetDistance && fuelRef.current > 0 && !gameOverFiredRef.current) {
           gameOverFiredRef.current = true;
-          // 👇 السطر ده هيشغل صوت الفوز والاحتفال
-          sfxPlayerRef.current?.playWinner();
+          sfxPlayerRef.current?.stopAll();
+          mainLoopRef.current?.stop();
           const distanceScore = scoreRef.current;
           const stars = fuelRef.current >= 60 ? 3 : fuelRef.current >= 30 ? 2 : 1;
           const finalScore = distanceScore + (coinsCollectedRef.current * COIN_VALUE);

@@ -4,6 +4,7 @@ import { LevelSelect } from './components/LevelSelect';
 import { RaceScreen } from './components/RaceScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { StoryVideoScreen } from './components/StoryVideoScreen';
+import { preloadResultsOutcomeSounds } from './components/resultsAudio';
 import { LEVELS } from './data/levels';
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from "firebase/firestore";
@@ -47,6 +48,10 @@ export default function App() {
       setLoading(false);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    preloadResultsOutcomeSounds();
   }, []);
 
   // 2. سحب البيانات من Firestore لو اليوزر مسجل دخول

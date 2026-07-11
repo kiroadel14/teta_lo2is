@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Star, RotateCcw, ChevronRight } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { playResultsOutcomeSound, preloadResultsOutcomeSounds } from './resultsAudio';
 
 interface ResultsScreenProps {
   won: boolean;
@@ -20,6 +21,18 @@ function toArabicNumerals(n: number): string {
 
 export function ResultsScreen({ won, score, stars, levelName, onRetry, onBack }: ResultsScreenProps) {
   const confettiFired = useRef(false);
+  const outcomeSoundFired = useRef(false);
+
+  useEffect(() => {
+    preloadResultsOutcomeSounds();
+  }, []);
+
+  useEffect(() => {
+    if (!outcomeSoundFired.current) {
+      outcomeSoundFired.current = true;
+      playResultsOutcomeSound(won);
+    }
+  }, [won]);
 
   useEffect(() => {
     if (won && !confettiFired.current) {
