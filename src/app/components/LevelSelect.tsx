@@ -10,7 +10,7 @@ interface LevelSelectProps {
 }
 
 
-export function LevelSelect({ onSelectLevel, levelStars, unlockedLevelIds , onBack}: LevelSelectProps) {
+export function LevelSelect({ onSelectLevel, levelStars, unlockedLevelIds, onBack }: LevelSelectProps) {
   return (
     <div
       dir="rtl"
@@ -40,7 +40,7 @@ export function LevelSelect({ onSelectLevel, levelStars, unlockedLevelIds , onBa
       <div className="relative z-10 flex items-center justify-center pt-4 pb-2">
         <div className="px-8 py-2 rounded-2xl shadow-lg" style={{ background: 'linear-gradient(135deg, #F97316, #EF4444)' }}>
           <h1 className="text-white text-center" style={{ fontSize: 'clamp(1.2rem, 3vw, 1.8rem)', fontWeight: 900, textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-            🏎️ تيتا لوئيس
+            تيتا لوئيس
           </h1>
           <p className="text-orange-100 text-center" style={{ fontSize: 'clamp(0.7rem, 1.5vw, 0.9rem)', fontWeight: 600 }}>
             اختار المستوى

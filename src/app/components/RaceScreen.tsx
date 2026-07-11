@@ -1162,6 +1162,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             {/* Sky Background */}
             <image href={FLAPPY_SKY} x="0" y="0" width="100" height="100" preserveAspectRatio="none" />
 
+
             {/* Distant Skyline (slow parallax) */}
             <g transform={`translate(${-(scrollOffset * 2) % 100}, 0)`}>
               <image href={FLAPPY_SKYLINE} x="0" y="20" width="100" height="60" preserveAspectRatio="none" />
@@ -1169,9 +1170,59 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             </g>
 
             {/* Cloud Band (medium parallax) */}
+            {/* Each cloud is a nested <svg viewBox="0 0 120 48"> so it always renders at its
+                natural 2.5:1 aspect ratio regardless of the outer SVG's non-uniform stretch.
+                Six clouds cover a 200-unit wide strip (two 100-unit tiles) so the parallax
+                translate(0 .. -100) loops seamlessly. */}
             <g transform={`translate(${-(scrollOffset * 4) % 100}, 0)`}>
-              <image href={FLAPPY_CLOUDS} x="0" y="10" width="100" height="30" preserveAspectRatio="none" />
-              <image href={FLAPPY_CLOUDS} x="100" y="10" width="100" height="30" preserveAspectRatio="none" />
+              {/* ── Tile A: x 0-100 ── */}
+              <svg x={2} y={5} width={28} height={11} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+                <ellipse cx="44" cy="18" rx="14" ry="11" fill="white" />
+              </svg>
+              <svg x={38} y={4} width={38} height={15} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+                <ellipse cx="75" cy="16" rx="16" ry="12" fill="white" />
+              </svg>
+              <svg x={76} y={7} width={22} height={9} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+              </svg>
+              {/* ── Tile B: x 100-200 (identical layout + 100) ── */}
+              <svg x={102} y={5} width={28} height={11} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+                <ellipse cx="44" cy="18" rx="14" ry="11" fill="white" />
+              </svg>
+              <svg x={138} y={4} width={38} height={15} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+                <ellipse cx="75" cy="16" rx="16" ry="12" fill="white" />
+              </svg>
+              <svg x={176} y={7} width={22} height={9} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
+                <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
+                <ellipse cx="60" cy="36" rx="50" ry="14" fill="white" opacity="0.92" />
+                <ellipse cx="28" cy="26" rx="24" ry="18" fill="white" />
+                <ellipse cx="60" cy="20" rx="28" ry="20" fill="white" />
+                <ellipse cx="90" cy="24" rx="22" ry="16" fill="white" />
+              </svg>
             </g>
 
             {/* Ground Strip (fast parallax, matches obstacle speed) */}
@@ -2480,7 +2531,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             animation: 'pulse 1s infinite',
           }}
         >
-          ⚠️ الوقود قليل! محطة الوقود جاية!
+          ⚠️ خلي بالك البنزين قليل !
         </div>
       )}
 
