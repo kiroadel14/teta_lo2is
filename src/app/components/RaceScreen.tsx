@@ -983,6 +983,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   // ── Determine which player boat image to use ──────────────────────────────
   const playerBoatSrc = level.id === 'level_4' ? PLAYER_BOAT_L4 : PLAYER_BOAT_L1;
   const isNoahLevel = level.id === 'level_4';
+  const flappyBaseSpeed = scrollOffset * (130 / 115);
 
   return (
     <div
@@ -1162,59 +1163,20 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             {/* Sky Background */}
             <image href={FLAPPY_SKY} x="0" y="0" width="100" height="100" preserveAspectRatio="none" />
 
-            {/* ════ SUN ════ */}
-            {/* The sun (glow, rays, core) is grouped inside a single <g> element within a nested <svg>.
-                The nested <svg> ensures uniform scaling (1:1 aspect ratio) across all viewport widths. */}
-            <svg x={74} y={2} width={20} height={20} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-              <defs>
-                <radialGradient id="flappySunCore" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#FFE066" />
-                  <stop offset="100%" stopColor="#FFB347" />
-                </radialGradient>
-                <radialGradient id="flappySunGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#FFE066" stopOpacity="0.20" />
-                  <stop offset="65%" stopColor="#FFD700" stopOpacity="0.08" />
-                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-              <g id="flappy-sun-group">
-                {/* Soft outer glow halo */}
-                <circle cx="50" cy="50" r="42" fill="url(#flappySunGlow)" />
-                {/* 8 evenly-spaced rays, alternating long/short */}
-                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
-                  const isLong = i % 2 === 0;
-                  const offset = isLong ? 24 : 19;
-                  const ry = isLong ? 8 : 6;
-                  return (
-                    <ellipse
-                      key={i}
-                      cx="50"
-                      cy={50 - offset}
-                      rx="3.5"
-                      ry={ry}
-                      fill="#FFE066"
-                      fillOpacity={isLong ? 0.65 : 0.60}
-                      transform={`rotate(${angle} 50 50)`}
-                    />
-                  );
-                })}
-                {/* Core circle */}
-                <circle cx="50" cy="50" r="12" fill="url(#flappySunCore)" />
-              </g>
-            </svg>
 
-            {/* Distant Skyline (slow parallax) */}
-            <g transform={`translate(${-(scrollOffset * 2) % 100}, 0)`}>
+
+            {/* Distant Skyline (slow parallax, 0.5x base speed) */}
+            <g transform={`translate(${-(flappyBaseSpeed * 0.5) % 100}, 0)`}>
               <image href={FLAPPY_SKYLINE} x="0" y="20" width="100" height="60" preserveAspectRatio="none" />
               <image href={FLAPPY_SKYLINE} x="100" y="20" width="100" height="60" preserveAspectRatio="none" />
             </g>
 
-            {/* Cloud Band (medium parallax) */}
+            {/* Cloud Band (medium parallax, 0.25x base speed) */}
             {/* Each cloud is a nested <svg viewBox="0 0 120 48"> so it always renders at its
                 natural 2.5:1 aspect ratio regardless of the outer SVG's non-uniform stretch.
                 Six clouds cover a 200-unit wide strip (two 100-unit tiles) so the parallax
                 translate(0 .. -100) loops seamlessly. */}
-            <g transform={`translate(${-(scrollOffset * 4) % 100}, 0)`}>
+            <g transform={`translate(${-(flappyBaseSpeed * 0.25) % 100}, 0)`}>
               {/* ── Tile A: x 0-100 ── */}
               <svg x={2} y={5} width={28} height={11} viewBox="0 0 120 48" preserveAspectRatio="xMidYMid meet">
                 <ellipse cx="60" cy="42" rx="52" ry="10" fill="#D8EEFF" opacity="0.75" />
@@ -1265,8 +1227,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
               </svg>
             </g>
 
-            {/* Ground Strip (fast parallax, matches obstacle speed) */}
-            <g transform={`translate(${-(scrollOffset * 10) % 100}, 85)`}>
+            {/* Ground Strip (fast parallax, matches obstacle speed 1.0x) */}
+            <g transform={`translate(${-(flappyBaseSpeed * 1.0) % 100}, 85)`}>
               <image href={FLAPPY_GROUND} x="0" y="0" width="100" height="15" preserveAspectRatio="none" />
               <image href={FLAPPY_GROUND} x="100" y="0" width="100" height="15" preserveAspectRatio="none" />
             </g>
