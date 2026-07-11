@@ -2406,13 +2406,13 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* ── FREE MODE: Hold-to-steer zones ── */}
+       {/* ── FREE MODE: Hold-to-steer zones ── */}
         {isFreeMode && (
           <div className="absolute bottom-0 left-0 right-0 w-full flex" style={{ height: '25%', pointerEvents: 'all' }} dir="ltr">
             {/* الزرار الأول: السهم الشمال */}
             <button
-              /* التعديل: غيرنا pl-12 لـ pl-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-              className="flex-1 flex items-end justify-start pl-30 pb-6"
+              /* التعديل: قللنا الرقم لـ 8 عشان السهم يروح ناحية حافة الشاشة الشمال أكتر ويبعد عن النص */
+              className="flex-1 flex items-end justify-start pl-8 pb-6"
               style={{
                 background: 'transparent',
                 border: 'none',
@@ -2436,8 +2436,8 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 
             {/* الزرار التاني: السهم اليمين */}
             <button
-              /* التعديل: غيرنا pr-12 لـ pr-24 عشان يدخل لجوه (ناحية النص) مسافة وسط */
-              className="flex-1 flex items-end justify-end pr-30 pb-6"
+              /* التعديل: قللنا الرقم لـ 8 عشان السهم يروح ناحية حافة الشاشة اليمين أكتر ويبعد عن النص */
+              className="flex-1 flex items-end justify-end pr-8 pb-6"
               style={{
                 background: 'transparent',
                 border: 'none',
