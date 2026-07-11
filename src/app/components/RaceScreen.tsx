@@ -1162,6 +1162,46 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             {/* Sky Background */}
             <image href={FLAPPY_SKY} x="0" y="0" width="100" height="100" preserveAspectRatio="none" />
 
+            {/* ════ SUN ════ */}
+            {/* The sun (glow, rays, core) is grouped inside a single <g> element within a nested <svg>.
+                The nested <svg> ensures uniform scaling (1:1 aspect ratio) across all viewport widths. */}
+            <svg x={74} y={2} width={20} height={20} viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <radialGradient id="flappySunCore" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#FFE066" />
+                  <stop offset="100%" stopColor="#FFB347" />
+                </radialGradient>
+                <radialGradient id="flappySunGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#FFE066" stopOpacity="0.20" />
+                  <stop offset="65%" stopColor="#FFD700" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+              <g id="flappy-sun-group">
+                {/* Soft outer glow halo */}
+                <circle cx="50" cy="50" r="42" fill="url(#flappySunGlow)" />
+                {/* 8 evenly-spaced rays, alternating long/short */}
+                {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => {
+                  const isLong = i % 2 === 0;
+                  const offset = isLong ? 24 : 19;
+                  const ry = isLong ? 8 : 6;
+                  return (
+                    <ellipse
+                      key={i}
+                      cx="50"
+                      cy={50 - offset}
+                      rx="3.5"
+                      ry={ry}
+                      fill="#FFE066"
+                      fillOpacity={isLong ? 0.65 : 0.60}
+                      transform={`rotate(${angle} 50 50)`}
+                    />
+                  );
+                })}
+                {/* Core circle */}
+                <circle cx="50" cy="50" r="12" fill="url(#flappySunCore)" />
+              </g>
+            </svg>
 
             {/* Distant Skyline (slow parallax) */}
             <g transform={`translate(${-(scrollOffset * 2) % 100}, 0)`}>
@@ -2547,7 +2587,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             animation: 'pulse 0.5s infinite',
           }}
         >
-          🔴 الوقود خلص! بسرعة بسرعة!
+          🔴 البنزين خلص! بسرعة بسرعة!
         </div>
       )}
 
