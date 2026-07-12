@@ -18,6 +18,11 @@ import playerboatImg from './player-boat.png';
 import sharkImg from './shark.png';
 import rockImg from './rock.png';
 import orbitImg from './orbit.png';
+import whirlpoolImg from './whirlpool.png';
+// ... (imports) ...
+//import whirlpoolImg from './whirlpool.png'; // 👈 استيراد صورة الدوامة الجديدة
+// 👈 مصفوفة ليفل 1 (جذع شجرة ودوامة)
+const logImg = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='15' y='30' width='70' height='40' rx='8' fill='%238B4513'/%3E%3Cline x1='25' y1='40' x2='75' y2='40' stroke='%235C2E0B' stroke-width='3'/%3E%3Cline x1='20' y1='50' x2='80' y2='50' stroke='%235C2E0B' stroke-width='3'/%3E%3Cline x1='30' y1='60' x2='70' y2='60' stroke='%235C2E0B' stroke-width='3'/%3E%3Cellipse cx='15' cy='50' rx='6' ry='20' fill='%23CD853F'/%3E%3C/svg%3E";
 // المصفوفة العادية لليفل 2
 const ENEMY_CARS = [enemyCar1Img, enemyCar2Img, enemyCar3Img];
 const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
@@ -25,16 +30,14 @@ const LEVEL_5_ENEMIES = [enemyCar1Img, enemyCar2Img, enemyCar3Img, greaseImg];
 // ── Boat sprites for free-steering river mode ──────────────────────────────
 const PLAYER_BOAT_L1 = playerboatImg;
 const PLAYER_BOAT_L4 = orbitImg;
-/*const ENEMY_BOATS = [
-  '/teta_lo2is/images/river/placeholder_enemy_boat_1.svg',
-  '/teta_lo2is/images/river/placeholder_enemy_boat_2.svg',
-  '/teta_lo2is/images/river/placeholder_enemy_boat_3.svg',
-];*/
-// 👈 مصفوفة ليفل 1 (قروش بس)
-const LEVEL_1_ENEMIES = [sharkImg];
 
-// 👈 مصفوفة ليفل 4 (قروش وصخور)
-const LEVEL_4_ENEMIES = [sharkImg, rockImg];
+// 👇 التعديل هيكون في السطرين دول بس 👇
+const LEVEL_1_ENEMIES = [logImg, whirlpoolImg];
+
+// 👈 مصفوفة ليفل 1 (جذع شجرة فقط)
+
+// 👈 مصفوفة ليفل 4 (صخور فقط)
+const LEVEL_4_ENEMIES = [rockImg];
 
 // ── Flappy mode sprites ──────────────────────────────────────────────────
 const FLAPPY_AIRPLANE = playerPlaneImg;
@@ -136,12 +139,12 @@ const CREST_HALF = ROAD_HALF_HORIZON * 0.55;
  * guaranteed non-zero, so the road NEVER collapses to a point.
  */
 function perspX(bottomOffset: number, t: number): number {
-  // horizonOffset is the proportionally smaller value at the horizon
   const ratio = ROAD_HALF_HORIZON / ROAD_HALF_BOTTOM;
   const horizonOffset = bottomOffset * ratio;
-  // Exponential easing: very compressed near t=0, expanding rapidly near t=1
-  const ease = Math.pow(t, 0.65);
-  return horizonOffset + (bottomOffset - horizonOffset) * ease;
+  
+  // 👇 لغينا الانحناء (Math.pow) اللي كان بيخلي العوائق تحدف لبره
+  // وبكده كل العوائق هتنزل في خط مستقيم 100% متوافق مع ضفاف النهر
+  return horizonOffset + (bottomOffset - horizonOffset) * t;
 }
 
 // Road outer edges at any depth t
@@ -332,6 +335,14 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const playerVXRef = useRef(0);    // current X velocity
   const steerLeftRef = useRef(false);
   const steerRightRef = useRef(false);
+  const boatWaveRef = useRef(0);    // horizontal sway for level 4 boat
+  const boatBounceRef = useRef(0);  // vertical bob during a wave impact
+  const boatRollRef = useRef(0);    // small tilt for level 4 boat
+  const waveEventActiveRef = useRef(false);
+  const waveEventTimerRef = useRef(0);
+  const waveEventProgressRef = useRef(0);
+  const waveEventDirectionRef = useRef(1);
+  const waveEventPatternRef = useRef<'single' | 'cycle'>('single');
   const touchXRef = useRef<number | null>(null);  // live touch X position
   const wakeParticlesRef = useRef<WakeParticle[]>([]);
   const wakeIdCounter = useRef(0);
@@ -660,7 +671,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           playerYRef.current = Math.max(5, Math.min(95, playerYRef.current)); // clamp inside view
         }
 
-        // ── FREE MODE: steering physics ────────────────────────────────────
+// ── FREE MODE: steering physics ────────────────────────────────────
         if (isFreeMode) {
           // Update steer flags from live touch position
           if (touchXRef.current !== null) {
@@ -680,9 +691,75 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           // Apply damping
           playerVXRef.current *= STEER_DAMP;
 
-          // Advance position
-          playerXRef.current = Math.max(0.05, Math.min(0.95, playerXRef.current + playerVXRef.current));
+          const isLevel4 = level.id === 'level_4' || level.id === '4';
+          if (isLevel4) {
+            waveEventTimerRef.current += deltaSeconds;
+            if (!waveEventActiveRef.current && waveEventTimerRef.current >= 4) {
+              waveEventTimerRef.current = 0;
+              waveEventActiveRef.current = true;
+              waveEventProgressRef.current = 0;
+              waveEventDirectionRef.current = Math.random() < 0.5 ? -1 : 1;
+              waveEventPatternRef.current = Math.random() < 0.6 ? 'single' : 'cycle';
+            }
 
+            if (waveEventActiveRef.current) {
+              waveEventProgressRef.current += deltaSeconds;
+              const duration = waveEventPatternRef.current === 'cycle' ? 1.0 : 0.8;
+              const normalized = Math.min(1, waveEventProgressRef.current / duration);
+              const impact = Math.sin(normalized * Math.PI);
+              const sway = 0.08;
+              const roll = 8;
+
+              if (waveEventPatternRef.current === 'single') {
+                boatWaveRef.current = impact * sway * waveEventDirectionRef.current;
+                boatRollRef.current = impact * roll * waveEventDirectionRef.current;
+              } else {
+                boatWaveRef.current = Math.sin(normalized * Math.PI * 2) * sway * waveEventDirectionRef.current;
+                boatRollRef.current = Math.sin(normalized * Math.PI * 2) * roll * waveEventDirectionRef.current;
+              }
+
+              boatBounceRef.current = impact * 1.8;
+              if (normalized >= 1) {
+                waveEventActiveRef.current = false;
+                boatWaveRef.current = 0;
+                boatBounceRef.current = 0;
+                boatRollRef.current = 0;
+              }
+            }
+          } else {
+            waveEventTimerRef.current = 0;
+            waveEventActiveRef.current = false;
+            waveEventProgressRef.current = 0;
+            boatWaveRef.current = 0;
+            boatBounceRef.current = 0;
+            boatRollRef.current = 0;
+          }
+
+          // 🌀 ── قوة سحب الدوامة (لليفل 1 فقط) ── 🌀
+         // 🌀 ── قوة سحب الدوامة (لليفل 1 فقط) ── 🌀
+          let suctionForce = 0;
+          const isLevel1 = level.id === 'level_1' || level.id === '1';
+
+          if (isLevel1) {
+            obstaclesRef.current.forEach((obs) => {
+              const imgSrc = LEVEL_1_ENEMIES[obs.spriteIndex];
+              const isWhirlpool = imgSrc === whirlpoolImg;
+              
+              if (isWhirlpool) {
+                const distX = obs.x - playerXRef.current;
+                const distT = obs.t - 1.0; 
+                
+                // لو المركب قريب من الدوامة.. ابدأ اسحبه ببطء
+                if (Math.abs(distT) < 0.25 && Math.abs(distX) < 0.3) {
+                  // لو حاسس السحبة ضعيفة، كبر الرقم 0.015 ده لـ 0.025 مثلاً
+                  suctionForce += (distX * 0.015); 
+                }
+              }
+            });
+          }
+
+          // Advance position (دمج حركة اللاعب الأصلية + تأثيرات الموج + قوة السحب)
+          playerXRef.current = Math.max(0.05, Math.min(0.95, playerXRef.current + playerVXRef.current + suctionForce));
           // ── Wake particles ─────────────────────────────────────────────
           // Emit 2 particles behind the player each frame
           const px = riverXAtT(playerXRef.current, 1.0);
@@ -701,8 +778,18 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           spawnFrameCounter.current -= level.spawnRate;
 
           // بنحدد المصفوفة حسب الليفل (نفترض إن اسم ليفل 5 هو 'level_5' زي ما مكتوب عندك في باقي المستويات)
-          const isLevel5 = level.id === 'level_5' || level.id === '5';
-          const currentEnemies = isLevel5 ? LEVEL_5_ENEMIES : ENEMY_CARS;
+         const isLevel5 = level.id === 'level_5' || level.id === '5';
+          const isLevel4 = level.id === 'level_4' || level.id === '4';
+          const isLevel1 = level.id === 'level_1' || level.id === '1';
+
+          let currentEnemies = ENEMY_CARS;
+          if (isLevel5) {
+            currentEnemies = LEVEL_5_ENEMIES;
+          } else if (isLevel4 && isFreeMode) {
+            currentEnemies = LEVEL_4_ENEMIES;
+          } else if (isLevel1 && isFreeMode) {
+            currentEnemies = LEVEL_1_ENEMIES;
+          }
           const spriteIndex = Math.floor(Math.random() * currentEnemies.length);
           let lane: number;
           let x: number;
@@ -712,8 +799,10 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             lane = 1; // Not used
             gapY = 30 + Math.random() * 40; // 30 to 70
           } else if (isFreeMode) {
-            // Continuous random position across river width
-            x = Math.random() * 0.82 + 0.09;
+            // Keep obstacles inside the river banks, not right on the edges.
+            const obstacleMinX = 0.15;
+            const obstacleMaxX = 0.85;
+            x = Math.random() * (obstacleMaxX - obstacleMinX) + obstacleMinX;
             lane = 1; // unused in free mode, but kept for interface compat
           } else {
             lane = Math.floor(Math.random() * 3);
@@ -1429,13 +1518,16 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                   );
                 })}
 
-                {[0.16, 0.33, 0.51, 0.70].map((tWave, wi) => {
-                  const tAnim = ((tWave + scrollOffset * (0.0025 + wi * 0.0008)) % 0.9) + 0.08;
+                {(
+                  isNoahLevel ? [0.14, 0.58] : [0.16, 0.33, 0.51, 0.70]
+                ).map((tWave, wi) => {
+                  const speedFactor = isNoahLevel ? 0.0009 : (0.0025 + wi * 0.0008);
+                  const tAnim = ((tWave + scrollOffset * speedFactor) % 0.9) + 0.08;
                   const y = yAtT(tAnim);
                   const leftX = riverXAtT(0.08, tAnim);
                   const rightX = riverXAtT(0.92, tAnim);
                   const width = rightX - leftX;
-                  const amp = 0.55 + wi * 0.16;
+                  const amp = isNoahLevel ? 1.0 + wi * 0.22 : 0.55 + wi * 0.16;
                   const phase = (wi * 1.7 + level.id.length * 0.3) % 3;
                   const c1x = leftX + width * 0.24;
                   const c2x = leftX + width * 0.48;
@@ -1443,11 +1535,30 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                   return (
                     <path
                       key={`wave${wi}`}
-                      d={`M ${leftX} ${y} C ${c1x} ${y - amp - phase * 0.12}, ${c2x} ${y + amp}, ${c3x} ${y} S ${rightX - width * 0.12} ${y - amp * 0.6}, ${rightX} ${y + amp * 0.25}`}
+                      d={`M ${leftX} ${y} C ${c1x} ${y - amp - phase * 0.14}, ${c2x} ${y + amp * 1.1}, ${c3x} ${y} S ${rightX - width * 0.12} ${y - amp * 0.7}, ${rightX} ${y + amp * 0.35}`}
                       fill="none"
-                      stroke={isNoahLevel ? "#D1FAF5" : "#DFFBFF"}
-                      strokeWidth={0.28 + tAnim * 0.34}
-                      opacity={0.24 + tAnim * 0.18}
+                      stroke={isNoahLevel ? "#E6FFFF" : "#DFFBFF"}
+                      strokeWidth={isNoahLevel ? 0.7 + tAnim * 0.4 : 0.28 + tAnim * 0.34}
+                      opacity={isNoahLevel ? 0.38 + tAnim * 0.18 : 0.24 + tAnim * 0.18}
+                      strokeLinecap="round"
+                    />
+                  );
+                })}
+                {isNoahLevel && [0.22, 0.45, 0.64, 0.83].map((tWave, wi) => {
+                  const tAnim = ((tWave + scrollOffset * 0.0035) % 0.9) + 0.08;
+                  const y = yAtT(tAnim);
+                  const leftX = riverXAtT(0.15, tAnim);
+                  const rightX = riverXAtT(0.85, tAnim);
+                  const width = rightX - leftX;
+                  const amp = 0.35 + wi * 0.1;
+                  return (
+                    <path
+                      key={`crest${wi}`}
+                      d={`M ${leftX} ${y} C ${leftX + width * 0.18} ${y - amp}, ${leftX + width * 0.4} ${y + amp * 0.6}, ${leftX + width * 0.55} ${y} S ${rightX - width * 0.18} ${y - amp * 0.5}, ${rightX} ${y}`}
+                      fill="none"
+                      stroke="#F7FFFF"
+                      strokeWidth={0.35 + tAnim * 0.26}
+                      opacity={0.18 + tAnim * 0.14}
                       strokeLinecap="round"
                     />
                   );
@@ -1784,7 +1895,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                   );
                 })}
 
-                {/* ── LAYER 11 (free): Sharks & Rocks ── */}
+                {/* ── LAYER 11 (free): Obstacles & Whirlpools ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
@@ -1793,53 +1904,54 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
 
                   const isLevel4 = level.id === 'level_4' || level.id === '4';
                   const currentRiverEnemies = isLevel4 ? LEVEL_4_ENEMIES : LEVEL_1_ENEMIES;
-                  const imgSrc = currentRiverEnemies[obs.spriteIndex] || LEVEL_1_ENEMIES[0];
-                  const isShark = imgSrc === sharkImg;
+                  const imgSrc = currentRiverEnemies[obs.spriteIndex] || currentRiverEnemies[0];
+                  const isWhirlpool = imgSrc === whirlpoolImg;
+                  const isRock = imgSrc === rockImg;
 
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                      {isShark ? (
-                        /* ================= تصميم القرش ================= */
-                        <>
-                          {/* 1. موجات المياه (Ripples) حوالين القرش زي الصخرة بالظبط */}
-                          {/* صغرنا الـ rx لـ 1.0 والـ ry لـ 0.25 */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.6" />
+                     {isWhirlpool ? (
+                        /* ================= تصميم الدوامة ================= */
+                        <g>
+                          {/* 1. صغرنا دوائر المياه الخارجية عشان تناسب الحجم الجديد */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} opacity="0.3" />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.2} ry={s * 0.25} fill="none" stroke="#87CEFA" strokeWidth={s * 0.06} opacity="0.4" />
 
-                          {/* صغرنا الـ rx لـ 1.4 والـ ry لـ 0.35 */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.30} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.3" />
+                          {/* 2. صغرنا الظل الغامق اللي بيدي عمق لتحت */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.2} fill="#061B3D" opacity="0.8" />
 
-                          {/* 2. صورة القرش (تم تكبيرها وتوسيط الزعنفة) */}
+                          {/* 3. صورة الدوامة الحقيقية */}
                           <image
                             href={imgSrc}
-                            // زقينا الصورة لليمين (-s * 0.9) عشان الزعنفة تيجي في نص الدايرة بالظبط
-                            x={-s * 1.6}
-                            y={-s * 1.7}
-                            // كبرنا حجم القرش هنا 
-                            width={s * 2.9}
-                            height={s * 2.9}
+                            /* صغرنا الأبعاد هنا (width 2.6 بدل 4.0) */
+                            x={-s * 1.3} 
+                            y={-s * 1.0} 
+                            width={s * 2.6} 
+                            height={s * 2.0} 
                             preserveAspectRatio="xMidYMid meet"
-                            clipPath="url(#sharkClip)"
+                            opacity="0.75" /* قللنا الشفافية سنة عشان تشرب من لون البحر اللي تحتها */
+                            style={{ 
+                              // الفلتر ده بيغمقها ويقلب لونها للأزرق الغامق بتاع البحر
+                              filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.75) contrast(1.2)' 
+                            }}
                           />
-                        </>
-                      ) : (
+                        </g>
+                      ) : isRock ? (
                         /* ================= تصميم الصخرة ================= */
                         <>
-                          {/* دوائر مياه (Ripples) حوالين الصخرة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.5" />
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.25" />
-                          {/* ظل أزرق غامق جداً تحت الماية عشان يثبت الصخرة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#0A2E6C" opacity="0.4" />
-
-                          {/* صورة الصخرة (صغرناها لـ 1.8 بدل 2.6) */}
-                          <image
-                            href={imgSrc}
-                            x={-s * 0.9}
-                            y={-s * 1.0}
-                            width={s * 1.8}
-                            height={s * 1.8}
-                            preserveAspectRatio="xMidYMid meet"
-                          />
+                          <image href={imgSrc} x={-s * 0.9} y={-s * 1.0} width={s * 1.8} height={s * 1.8} preserveAspectRatio="xMidYMid meet" />
                         </>
+                      ) : (
+                        /* ================= تصميم جذع الشجرة ================= */
+                        <g style={{ animation: 'boatBobbing 3s ease-in-out infinite' }}>
+                          {/* دوائر الماية تحت الجذع */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.3} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.4" />
+                          {/* صورة الجذع */}
+                          <image href={imgSrc} x={-s * 1.2} y={-s * 0.8} width={s * 2.4} height={s * 1.6} preserveAspectRatio="xMidYMid meet" />
+                        </g>
                       )}
                     </g>
                   );
@@ -1849,10 +1961,10 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                 {(() => {
                   // التعديل هنا: لو إحنا في ليفل الفلك كبر الحجم لـ 14، ولو مركب عادي خليه 8 زي ما هو
                   const s = isNoahLevel ? 14 : 10;
-                  const cy = 94;
-                  const svgX = riverXAtT(playerX, 1.0);
-                  // Tilt based on velocity
-                  const tilt = playerVXRef.current * 120; // degrees, small
+                  const cy = 94 + (isNoahLevel ? boatBounceRef.current : 0);
+                  const svgX = riverXAtT(playerX, 1.0) + (isNoahLevel ? boatWaveRef.current : 0);
+                  // Tilt based on horizontal sway for level 4
+                  const tilt = isNoahLevel ? boatRollRef.current : playerVXRef.current * 120;
                   return (
                     <motion.g
                       animate={{ x: svgX, y: cy }}
@@ -2559,7 +2671,11 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
+          }
       `}</style>
     </div>
   );
