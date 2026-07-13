@@ -28,7 +28,7 @@ export default defineConfig({
     },
   },
 
-  base: "/teta_lo2is/",
+
 
   assetsInclude: ['**/*.svg', '**/*.csv'],
 
