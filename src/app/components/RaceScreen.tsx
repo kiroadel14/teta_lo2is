@@ -1973,20 +1973,20 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                    {isWhirlpool ? (
+
     /* ================= تصميم الدوامة الحية (مدمجة مع الماية) ================= */
-    <g>
-      {/* 1. موجات متحركة بتوسع حوالين الدوامة تدي إحساس إنها بتسحب الماية */}
+     <g transform={`translate(0, ${s * 0.07})`}> 
+      
+      {/* 1. موجات متحركة بتوسع حوالين الدوامة */}
       <g style={{ transformOrigin: '0px 0px' }}>
-        <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite' }} />
-        <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
+        <ellipse cx="0" cy="0" rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite' }} />
+        <ellipse cx="0" cy="0" rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
       </g>
 
-      {/* 2. عمق الدوامة (ظل مموه بيدي إحساس إنها حفرة غويطة جوا الماية مش طايرة فوقها) */}
-      <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.28} fill="#021024" opacity="0.7" style={{ filter: 'blur(4px)' }} />
-
+    
       {/* 3. تعديل المنظور (Perspective) 
           الجروب ده بيضغط الدوامة (scaleY) عشان "تنام" على سطح الماية وتطابق الـ 3D */}
-      <g style={{ transform: 'scaleY(0.3)', transformOrigin: '0px 0px' }}>
+      <g style={{ transform: 'scaleY(0.50)', transformOrigin: '0px 0px' }}>
         
         {/* الجروب الداخلي ده للأنيميشن عشان تلف وهي نايمة على السطح بشكل طبيعي */}
         <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
