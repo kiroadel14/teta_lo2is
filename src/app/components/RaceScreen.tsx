@@ -716,7 +716,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
               if (waveEventProgressRef.current <= duration) {
                 const normalized = waveEventProgressRef.current / duration;
                 const impact = Math.sin(normalized * Math.PI);
-                const sway = 0.1; // 👈 التعديل: قوة الهزة بقت 0.09 زي ما طلبت
+                const sway = 0.15;
                 const roll = 8;
 
                 if (waveEventPatternRef.current === 'single') {
@@ -1524,16 +1524,45 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                   );
                 })}
 
+                {/* ── الأمواج العادية اللي في الخلفية ── */}
                 {(
-                  isNoahLevel ? [0.14, 0.58] : [0.16, 0.33, 0.51, 0.70]
+                  isNoahLevel ? [0.15, 0.45, 0.75] : [0.16, 0.33, 0.51, 0.70]
                 ).map((tWave, wi) => {
-                  const speedFactor = isNoahLevel ? 0.0009 : (0.0025 + wi * 0.0008);
+                  const speedFactor = isNoahLevel ? 0.0012 : (0.0025 + wi * 0.0008);
                   const tAnim = ((tWave + scrollOffset * speedFactor) % 0.9) + 0.08;
                   const y = yAtT(tAnim);
-                  const leftX = riverXAtT(0.08, tAnim);
-                  const rightX = riverXAtT(0.92, tAnim);
+                  
+                  // 1. زقينا الأطراف لجوا (0.05 و 0.95) عشان تفضل دايماً جوه الماية ومتطلعش ع الرملة
+                  const leftX = riverXAtT(0.05, tAnim);
+                  const rightX = riverXAtT(0.95, tAnim);
                   const width = rightX - leftX;
-                  const amp = isNoahLevel ? 1.0 + wi * 0.22 : 0.55 + wi * 0.16;
+                  
+                  if (isNoahLevel) {
+                    // 2. في ليفل 4: بنرسم موجات مندمجة مع الماية (Swells) مسطحة عشان متبانش طايرة
+                    const amp = 0.5 + Math.pow(tAnim, 1.5) * 4.0; 
+                    return (
+                      <g key={`wave${wi}`} opacity={0.2 + tAnim * 0.4}>
+                        {/* جسم الموجة الغامق (نايم على الماية) */}
+                        <path
+                          d={`M ${leftX} ${y} Q ${leftX + width/2} ${y - amp} ${rightX} ${y} Q ${leftX + width/2} ${y + amp * 1.5} ${leftX} ${y} Z`}
+                          fill="#083E63"
+                          opacity="0.6"
+                        />
+                        {/* لمعة خفيفة زرقا فوق الموجة عشان تديها تجسيم 3D */}
+                        <path
+                          d={`M ${leftX + width*0.1} ${y} Q ${leftX + width/2} ${y - amp*0.5} ${rightX - width*0.1} ${y}`}
+                          fill="none"
+                          stroke="#4A90E2"
+                          strokeWidth={0.3 + tAnim * 1.2}
+                          strokeLinecap="round"
+                          opacity="0.5"
+                        />
+                      </g>
+                    );
+                  }
+
+                  // 3. في ليفل 1: خطوط الماية العادية القديمة
+                  const amp = 0.55 + wi * 0.16;
                   const phase = (wi * 1.7 + level.id.length * 0.3) % 3;
                   const c1x = leftX + width * 0.24;
                   const c2x = leftX + width * 0.48;
@@ -1543,13 +1572,14 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                       key={`wave${wi}`}
                       d={`M ${leftX} ${y} C ${c1x} ${y - amp - phase * 0.14}, ${c2x} ${y + amp * 1.1}, ${c3x} ${y} S ${rightX - width * 0.12} ${y - amp * 0.7}, ${rightX} ${y + amp * 0.35}`}
                       fill="none"
-                      stroke={isNoahLevel ? "#E6FFFF" : "#DFFBFF"}
-                      strokeWidth={isNoahLevel ? 0.7 + tAnim * 0.4 : 0.28 + tAnim * 0.34}
-                      opacity={isNoahLevel ? 0.38 + tAnim * 0.18 : 0.24 + tAnim * 0.18}
+                      stroke="#DFFBFF"
+                      strokeWidth={0.28 + tAnim * 0.34}
+                      opacity={0.24 + tAnim * 0.18}
                       strokeLinecap="round"
                     />
                   );
                 })}
+
                 {/* 🌊 ── الموجة الضخمة المتزامنة (لليفل 4 بس) ── 🌊 */}
                 {isNoahLevel && (
                   <g>
@@ -1596,7 +1626,6 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                     })()}
                   </g>
                 )}
-
                 {/* ── Water ripple lines (animated with scrollOffset) ── */}
                 {[0.2, 0.35, 0.52, 0.68, 0.82].map((tRipple, ri) => {
                   const tAnim = ((tRipple + scrollOffset * 0.004) % 0.9) + 0.08;
@@ -1943,38 +1972,46 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
 
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
-                     {isWhirlpool ? (
-                        /* ================= تصميم الدوامة الحية ================= */
-                        <g>
-                          {/* 1. موجات متحركة بتوسع حوالين الدوامة تدي إحساس إنها بتسحب الماية */}
-                          <g style={{ transformOrigin: '0px 0px' }}>
-                            <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite' }} />
-                            <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
-                          </g>
+                   {isWhirlpool ? (
+    /* ================= تصميم الدوامة الحية (مدمجة مع الماية) ================= */
+    <g>
+      {/* 1. موجات متحركة بتوسع حوالين الدوامة تدي إحساس إنها بتسحب الماية */}
+      <g style={{ transformOrigin: '0px 0px' }}>
+        <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite' }} />
+        <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
+      </g>
 
-                          {/* 2. دوائر ثابتة للحافة */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.2} ry={s * 0.25} fill="none" stroke="#87CEFA" strokeWidth={s * 0.06} opacity="0.4" />
+      {/* 2. عمق الدوامة (ظل مموه بيدي إحساس إنها حفرة غويطة جوا الماية مش طايرة فوقها) */}
+      <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.28} fill="#021024" opacity="0.7" style={{ filter: 'blur(4px)' }} />
 
-                          {/* 3. الظل الغامق */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.2} fill="#061B3D" opacity="0.8" />
+      {/* 3. تعديل المنظور (Perspective) 
+          الجروب ده بيضغط الدوامة (scaleY) عشان "تنام" على سطح الماية وتطابق الـ 3D */}
+      <g style={{ transform: 'scaleY(0.4)', transformOrigin: '0px 0px' }}>
+        
+        {/* الجروب الداخلي ده للأنيميشن عشان تلف وهي نايمة على السطح بشكل طبيعي */}
+        <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
+          <image
+            href={imgSrc}
+            x={-s * 1.5} 
+            y={-s * 1.5} 
+            width={s * 3.0} 
+            height={s * 3.0} 
+            preserveAspectRatio="xMidYMid meet"
+            opacity="0.85" 
+            style={{ 
+              filter: 'hue-rotate(15deg) saturate(0.9) brightness(0.65) contrast(1.1)' 
+            }}
+          />
+        </g>
+      </g>
 
-                          {/* 4. صورة الدوامة مع الفلتر بتاعك + أنيميشن النبض عشان تبان بتغلي */}
-                          <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
-                            <image
-                              href={imgSrc}
-                              x={-s * 1.3} 
-                              y={-s * 1.0} 
-                              width={s * 2.6} 
-                              height={s * 2.0} 
-                              preserveAspectRatio="xMidYMid meet"
-                              opacity="0.70"
-                              style={{ 
-                                filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.65) contrast(1.2)' 
-                              }}
-                            />
-                          </g>
-                        </g>
-                      ) : isRock ? (
+      {/* 4. طبقة ماية شفافة فوق الصورة عشان تدمج الألوان وتخفي أي حواف مقطوعة */}
+      <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.3} fill="#0077BE" opacity="0.35" style={{ mixBlendMode: 'overlay' }} />
+
+      {/* 5. دوائر ثابتة للحافة تدي نعومة لشكل الدوامة الخارجي */}
+      <ellipse cx="0" cy={s * 0.1} rx={s * 1.2} ry={s * 0.25} fill="none" stroke="#87CEFA" strokeWidth={s * 0.05} opacity="0.5" />
+    </g>
+  ) : isRock ? (
                         /* ================= تصميم الصخرة (موجات حية) ================= */
                         <g>
                           {/* 1. موجات المياه المتحركة (Ripples) اللي بتوسع حوالين الصخرة */}
