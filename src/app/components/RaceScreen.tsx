@@ -1975,7 +1975,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                    {isWhirlpool ? (
 
     /* ================= تصميم الدوامة الحية (مدمجة مع الماية) ================= */
-     <g transform={`translate(0, ${s * 0.1})`}> 
+     <g transform={`translate(0, ${s * 0.2})`}> 
       
       {/* 1. موجات متحركة بتوسع حوالين الدوامة */}
       <g style={{ transformOrigin: '0px 0px' }}>
