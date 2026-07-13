@@ -1986,7 +1986,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
 
       {/* 3. تعديل المنظور (Perspective) 
           الجروب ده بيضغط الدوامة (scaleY) عشان "تنام" على سطح الماية وتطابق الـ 3D */}
-      <g style={{ transform: 'scaleY(0.4)', transformOrigin: '0px 0px' }}>
+      <g style={{ transform: 'scaleY(0.3)', transformOrigin: '0px 0px' }}>
         
         {/* الجروب الداخلي ده للأنيميشن عشان تلف وهي نايمة على السطح بشكل طبيعي */}
         <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
@@ -1997,16 +1997,16 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
             width={s * 3.0} 
             height={s * 3.0} 
             preserveAspectRatio="xMidYMid meet"
-            opacity="0.85" 
+            opacity="0.70" 
             style={{ 
-              filter: 'hue-rotate(15deg) saturate(0.9) brightness(0.65) contrast(1.1)' 
+              filter: 'hue-rotate(15deg) saturate(0.9) brightness(0.6) contrast(1.1)' 
             }}
           />
         </g>
       </g>
 
       {/* 4. طبقة ماية شفافة فوق الصورة عشان تدمج الألوان وتخفي أي حواف مقطوعة */}
-      <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.3} fill="#0077BE" opacity="0.35" style={{ mixBlendMode: 'overlay' }} />
+      <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.3} fill="#075BA4" opacity="0.35" style={{ mixBlendMode: 'overlay' }} />
 
       {/* 5. دوائر ثابتة للحافة تدي نعومة لشكل الدوامة الخارجي */}
       <ellipse cx="0" cy={s * 0.1} rx={s * 1.2} ry={s * 0.25} fill="none" stroke="#87CEFA" strokeWidth={s * 0.05} opacity="0.5" />
