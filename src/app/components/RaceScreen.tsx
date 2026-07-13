@@ -1572,7 +1572,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                             <path
                               d={`M ${leftX} ${y} Q ${leftX + width/2} ${y + amp * 0.8} ${rightX} ${y} L ${rightX} ${y+3} Q ${leftX + width/2} ${y + amp * 0.8 + 3} ${leftX} ${y+3} Z`}
                               fill="#031A38"
-                              opacity="0.15" // 👈 التعديل هنا: قللنا الظل لـ 0.15 بدل 0.4
+                              opacity="0.1" // 👈 التعديل هنا: قللنا الظل لـ 0.15 بدل 0.4
                             />
                             {/* جسم الموجة نفسه */}
                             <path
@@ -1928,7 +1928,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                   );
                 })}
 
-                {/* ── LAYER 11 (free): Obstacles & Whirlpools ── */}
+               {/* ── LAYER 11 (free): Obstacles & Whirlpools ── */}
                 {obstacles.map((obs) => {
                   const cx = riverXAtT(obs.x, obs.t);
                   const cy = yAtT(obs.t);
@@ -1944,32 +1944,37 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                   return (
                     <g key={obs.id} transform={`translate(${cx}, ${cy})`}>
                      {isWhirlpool ? (
-                        /* ================= تصميم الدوامة ================= */
+                        /* ================= تصميم الدوامة الحية ================= */
                         <g>
-                          {/* 1. صغرنا دوائر المياه الخارجية عشان تناسب الحجم الجديد */}
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} opacity="0.3" />
+                          {/* 1. موجات متحركة بتوسع حوالين الدوامة تدي إحساس إنها بتسحب الماية */}
+                          <g style={{ transformOrigin: '0px 0px' }}>
+                            <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite' }} />
+                            <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.35} fill="none" stroke="#87CEFA" strokeWidth={s * 0.04} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
+                          </g>
+
+                          {/* 2. دوائر ثابتة للحافة */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.2} ry={s * 0.25} fill="none" stroke="#87CEFA" strokeWidth={s * 0.06} opacity="0.4" />
 
-                          {/* 2. صغرنا الظل الغامق اللي بيدي عمق لتحت */}
+                          {/* 3. الظل الغامق */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.0} ry={s * 0.2} fill="#061B3D" opacity="0.8" />
 
-                          {/* 3. صورة الدوامة الحقيقية */}
-                          <image
-                            href={imgSrc}
-                            /* صغرنا الأبعاد هنا (width 2.6 بدل 4.0) */
-                            x={-s * 1.3} 
-                            y={-s * 1.0} 
-                            width={s * 2.6} 
-                            height={s * 2.0} 
-                            preserveAspectRatio="xMidYMid meet"
-                            opacity="0.75" /* قللنا الشفافية سنة عشان تشرب من لون البحر اللي تحتها */
-                            style={{ 
-                              // الفلتر ده بيغمقها ويقلب لونها للأزرق الغامق بتاع البحر
-                              filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.70) contrast(1.2)' 
-                            }}
-                          />
+                          {/* 4. صورة الدوامة مع الفلتر بتاعك + أنيميشن النبض عشان تبان بتغلي */}
+                          <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
+                            <image
+                              href={imgSrc}
+                              x={-s * 1.3} 
+                              y={-s * 1.0} 
+                              width={s * 2.6} 
+                              height={s * 2.0} 
+                              preserveAspectRatio="xMidYMid meet"
+                              opacity="0.70"
+                              style={{ 
+                                filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.65) contrast(1.2)' 
+                              }}
+                            />
+                          </g>
                         </g>
-                     ) : isRock ? (
+                      ) : isRock ? (
                         /* ================= تصميم الصخرة (موجات حية) ================= */
                         <g>
                           {/* 1. موجات المياه المتحركة (Ripples) اللي بتوسع حوالين الصخرة */}
@@ -1989,11 +1994,16 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                         </g>
                       ) : (
                         /* ================= تصميم جذع الشجرة ================= */
-                        <g style={{ animation: 'boatBobbing 3s ease-in-out infinite' }}>
-                          {/* دوائر الماية تحت الجذع */}
+                        <g>
+                          {/* 1. صغرنا موجات المياه وظبطنا مركز الحركة بدقة عشان نمنع اللجلجة نهائياً */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.03} style={{ transformOrigin: `0px ${s * 0.1}px`, animation: 'rockRipple 2s linear infinite' }} />
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.3} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.03} style={{ transformOrigin: `0px ${s * 0.1}px`, animation: 'rockRipple 2s linear infinite 1s' }} />
+                          
+                          {/* 2. صغرنا دايرة الماية الثابتة تحت الجذع */}
                           <ellipse cx="0" cy={s * 0.1} rx={s * 1.6} ry={s * 0.3} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.4" />
-                          {/* صورة الجذع */}
-                          <image href={imgSrc} x={-s * 1.2} y={-s * 0.8} width={s * 2.4} height={s * 1.6} preserveAspectRatio="xMidYMid meet" />
+                          
+                          {/* 3. صورة الجذع الثابتة */}
+                          <image href={imgSrc} x={-s * 1.8} y={-s * 1.2} width={s * 3.6} height={s * 2.4} preserveAspectRatio="xMidYMid meet" />
                         </g>
                       )}
                     </g>
