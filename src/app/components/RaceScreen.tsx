@@ -1975,7 +1975,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
                    {isWhirlpool ? (
 
     /* ================= تصميم الدوامة الحية (مدمجة مع الماية) ================= */
-     <g transform={`translate(0, ${s * 0.07})`}> 
+     <g transform={`translate(0, ${s * 0.1})`}> 
       
       {/* 1. موجات متحركة بتوسع حوالين الدوامة */}
       <g style={{ transformOrigin: '0px 0px' }}>
@@ -1986,7 +1986,7 @@ const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
     
       {/* 3. تعديل المنظور (Perspective) 
           الجروب ده بيضغط الدوامة (scaleY) عشان "تنام" على سطح الماية وتطابق الـ 3D */}
-      <g style={{ transform: 'scaleY(0.50)', transformOrigin: '0px 0px' }}>
+      <g style={{ transform: 'scaleY(0.30)', transformOrigin: '0px 0px' }}>
         
         {/* الجروب الداخلي ده للأنيميشن عشان تلف وهي نايمة على السطح بشكل طبيعي */}
         <g style={{ transformOrigin: '0px 0px', animation: 'whirlpoolChurn 1.5s ease-in-out infinite' }}>
