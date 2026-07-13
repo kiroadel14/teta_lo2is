@@ -307,7 +307,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
   const [fuelPenaltyFeedbacks, setFuelPenaltyFeedbacks] = useState<FuelPenaltyFeedback[]>([]);
   const [laneIndicator, setLaneIndicator] = useState<'left' | 'right' | null>(null);
   const [scrollOffset, setScrollOffset] = useState(0);
-
+const [waveTimer, setWaveTimer] = useState(0); // 👈 السطر الجديد
   const frameRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const distanceRef = useRef(0);
@@ -694,8 +694,15 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           const isLevel4 = level.id === 'level_4' || level.id === '4';
           if (isLevel4) {
             waveEventTimerRef.current += deltaSeconds;
-            if (!waveEventActiveRef.current && waveEventTimerRef.current >= 4) {
+            
+            // 1. دورة الموجة كل 3 ثواني بالظبط
+            if (waveEventTimerRef.current >= 3.0) {
               waveEventTimerRef.current = 0;
+              waveEventActiveRef.current = false;
+            }
+
+            // 2. الموجة بتاخد ثانيتين عشان توصل للفلك.. أول ما توصل نضرب الفلك!
+            if (waveEventTimerRef.current >= 2.0 && !waveEventActiveRef.current) {
               waveEventActiveRef.current = true;
               waveEventProgressRef.current = 0;
               waveEventDirectionRef.current = Math.random() < 0.5 ? -1 : 1;
@@ -705,34 +712,32 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
             if (waveEventActiveRef.current) {
               waveEventProgressRef.current += deltaSeconds;
               const duration = waveEventPatternRef.current === 'cycle' ? 1.0 : 0.8;
-              const normalized = Math.min(1, waveEventProgressRef.current / duration);
-              const impact = Math.sin(normalized * Math.PI);
-              const sway = 0.08;
-              const roll = 8;
+              
+              if (waveEventProgressRef.current <= duration) {
+                const normalized = waveEventProgressRef.current / duration;
+                const impact = Math.sin(normalized * Math.PI);
+                const sway = 0.1; // 👈 التعديل: قوة الهزة بقت 0.09 زي ما طلبت
+                const roll = 8;
 
-              if (waveEventPatternRef.current === 'single') {
-                boatWaveRef.current = impact * sway * waveEventDirectionRef.current;
-                boatRollRef.current = impact * roll * waveEventDirectionRef.current;
+                if (waveEventPatternRef.current === 'single') {
+                  boatWaveRef.current = impact * sway * waveEventDirectionRef.current;
+                  boatRollRef.current = impact * roll * waveEventDirectionRef.current;
+                } else {
+                  boatWaveRef.current = Math.sin(normalized * Math.PI * 2) * sway * waveEventDirectionRef.current;
+                  boatRollRef.current = Math.sin(normalized * Math.PI * 2) * roll * waveEventDirectionRef.current;
+                }
+                boatBounceRef.current = impact * 1.8;
               } else {
-                boatWaveRef.current = Math.sin(normalized * Math.PI * 2) * sway * waveEventDirectionRef.current;
-                boatRollRef.current = Math.sin(normalized * Math.PI * 2) * roll * waveEventDirectionRef.current;
-              }
-
-              boatBounceRef.current = impact * 1.8;
-              if (normalized >= 1) {
-                waveEventActiveRef.current = false;
+                // لما الموجة تخلص تأثيرها
                 boatWaveRef.current = 0;
                 boatBounceRef.current = 0;
                 boatRollRef.current = 0;
               }
+            } else {
+              boatWaveRef.current = 0;
+              boatBounceRef.current = 0;
+              boatRollRef.current = 0;
             }
-          } else {
-            waveEventTimerRef.current = 0;
-            waveEventActiveRef.current = false;
-            waveEventProgressRef.current = 0;
-            boatWaveRef.current = 0;
-            boatBounceRef.current = 0;
-            boatRollRef.current = 0;
           }
 
           // 🌀 ── قوة سحب الدوامة (لليفل 1 فقط) ── 🌀
@@ -1036,6 +1041,7 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
         } else if (isFreeMode) {
           setPlayerX(playerXRef.current);
           setWakeParticles([...wakeParticlesRef.current]);
+          setWaveTimer(waveEventTimerRef.current); // 👈 السطر الجديد ده عشان نربط الموجة بالشاشة
         }
       }
 
@@ -1544,25 +1550,52 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                     />
                   );
                 })}
-                {isNoahLevel && [0.22, 0.45, 0.64, 0.83].map((tWave, wi) => {
-                  const tAnim = ((tWave + scrollOffset * 0.0035) % 0.9) + 0.08;
-                  const y = yAtT(tAnim);
-                  const leftX = riverXAtT(0.15, tAnim);
-                  const rightX = riverXAtT(0.85, tAnim);
-                  const width = rightX - leftX;
-                  const amp = 0.35 + wi * 0.1;
-                  return (
-                    <path
-                      key={`crest${wi}`}
-                      d={`M ${leftX} ${y} C ${leftX + width * 0.18} ${y - amp}, ${leftX + width * 0.4} ${y + amp * 0.6}, ${leftX + width * 0.55} ${y} S ${rightX - width * 0.18} ${y - amp * 0.5}, ${rightX} ${y}`}
-                      fill="none"
-                      stroke="#F7FFFF"
-                      strokeWidth={0.35 + tAnim * 0.26}
-                      opacity={0.18 + tAnim * 0.14}
-                      strokeLinecap="round"
-                    />
-                  );
-                })}
+                {/* 🌊 ── الموجة الضخمة المتزامنة (لليفل 4 بس) ── 🌊 */}
+                {isNoahLevel && (
+                  <g>
+                    {(() => {
+                      const tAnim = waveTimer / 2.0; 
+                      
+                      if (tAnim > 0.02 && tAnim < 1.2) {
+                        const y = yAtT(tAnim);
+                        
+                        // 👇 1. تعديل عرض الموجة (عشان تاخد البحر كله)
+                        const leftX = riverXAtT(0.02, tAnim);  // 👈 0.0 يعني من أقصى حافة الشمال
+                        const rightX = riverXAtT(0.98, tAnim); // 👈 1.0 يعني لأقصى حافة اليمين
+                        const width = rightX - leftX;
+                        
+                        const amp = 0.8 + Math.pow(tAnim, 1.8) * 5.5; 
+                        
+                        return (
+                          <g opacity={Math.min(1, tAnim * 5, (1.2 - tAnim) * 5)}>
+                            {/* 👇 2. تعديل ظل الموجة (قللنا الشفافية عشان ميبقاش تقيل ومقفل) */}
+                            <path
+                              d={`M ${leftX} ${y} Q ${leftX + width/2} ${y + amp * 0.8} ${rightX} ${y} L ${rightX} ${y+3} Q ${leftX + width/2} ${y + amp * 0.8 + 3} ${leftX} ${y+3} Z`}
+                              fill="#031A38"
+                              opacity="0.15" // 👈 التعديل هنا: قللنا الظل لـ 0.15 بدل 0.4
+                            />
+                            {/* جسم الموجة نفسه */}
+                            <path
+                              d={`M ${leftX} ${y} Q ${leftX + width/2} ${y - amp} ${rightX} ${y} Q ${leftX + width/2} ${y + amp * 0.5} ${leftX} ${y} Z`}
+                              fill="#0B6F86"
+                              opacity="0.6"
+                            />
+                            {/* الرغوة البيضا فوق الموجة */}
+                            <path
+                              d={`M ${leftX + width * 0.02} ${y - amp * 0.1} Q ${leftX + width/2} ${y - amp * 1.2} ${rightX - width * 0.02} ${y - amp * 0.1}`}
+                              fill="none"
+                              stroke="#D8F8F5"
+                              strokeWidth={0.8 + tAnim * 1.5}
+                              strokeLinecap="round"
+                              opacity="0.75"
+                            />
+                          </g>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </g>
+                )}
 
                 {/* ── Water ripple lines (animated with scrollOffset) ── */}
                 {[0.2, 0.35, 0.52, 0.68, 0.82].map((tRipple, ri) => {
@@ -1932,18 +1965,28 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
                             opacity="0.75" /* قللنا الشفافية سنة عشان تشرب من لون البحر اللي تحتها */
                             style={{ 
                               // الفلتر ده بيغمقها ويقلب لونها للأزرق الغامق بتاع البحر
-                              filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.75) contrast(1.2)' 
+                              filter: 'hue-rotate(15deg) saturate(0.8) brightness(0.70) contrast(1.2)' 
                             }}
                           />
                         </g>
-                      ) : isRock ? (
-                        /* ================= تصميم الصخرة ================= */
-                        <>
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1} ry={s * 0.25} fill="none" stroke="white" strokeWidth={s * 0.08} opacity="0.5" />
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 1.4} ry={s * 0.35} fill="none" stroke="white" strokeWidth={s * 0.04} opacity="0.25" />
-                          <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#0A2E6C" opacity="0.4" />
+                     ) : isRock ? (
+                        /* ================= تصميم الصخرة (موجات حية) ================= */
+                        <g>
+                          {/* 1. موجات المياه المتحركة (Ripples) اللي بتوسع حوالين الصخرة */}
+                          <g style={{ transformOrigin: '0px 0px' }}>
+                            <ellipse cx="0" cy={s * 0.1} rx={s * 0.9} ry={s * 0.25} fill="none" stroke="#D8F8F5" strokeWidth={s * 0.05} style={{ animation: 'rockRipple 2s linear infinite' }} />
+                            <ellipse cx="0" cy={s * 0.1} rx={s * 0.9} ry={s * 0.25} fill="none" stroke="#D8F8F5" strokeWidth={s * 0.05} style={{ animation: 'rockRipple 2s linear infinite 1s' }} />
+                          </g>
+
+                          {/* 2. ظل غامق تحت الصخرة يثبتها في الأرض */}
+                          <ellipse cx="0" cy={s * 0.1} rx={s * 0.8} ry={s * 0.2} fill="#0A2E6C" opacity="0.6" />
+                          
+                          {/* 3. صورة الصخرة */}
                           <image href={imgSrc} x={-s * 0.9} y={-s * 1.0} width={s * 1.8} height={s * 1.8} preserveAspectRatio="xMidYMid meet" />
-                        </>
+                          
+                          {/* 4. رشة مياه ثابتة قدام الصخرة تدي إحساس إن تيار الماية بيخبط فيها */}
+                          <path d={`M ${-s * 0.4} ${s * 0.15} Q 0 ${s * 0.3} ${s * 0.4} ${s * 0.15}`} fill="none" stroke="white" strokeWidth={s * 0.06} strokeLinecap="round" opacity="0.5" />
+                        </g>
                       ) : (
                         /* ================= تصميم جذع الشجرة ================= */
                         <g style={{ animation: 'boatBobbing 3s ease-in-out infinite' }}>
@@ -2676,7 +2719,12 @@ export function RaceScreen({ level, onGameOver, onBack }: RaceScreenProps) {
           to { transform: rotate(360deg); }
         }
           }
-      `}</style>
+     @keyframes rockRipple {
+          0% { transform: scale(0.8); opacity: 0.6; }
+          100% { transform: scale(1.8); opacity: 0; }
+        }
+
+     `}</style>
     </div>
   );
 }
